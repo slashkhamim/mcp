@@ -62,8 +62,8 @@ By participating, you agree to uphold its standards.
 Thanks to all these amazing contributors!  
 Want to be on this list? [Join us](#) and start contributing!
 
-<a href="https://github.com/kevinslashdigital/aws-api-practitioner-prep/graphs/contributors">
-  <img src="https://contrib.rocks/image?repo=kevinslashdigital/aws-api-practitioner-prep" />
+<a href="https://github.com/kevinslashdigital/mcp/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=kevinslashdigital/mcp" />
 </a>
 
 Made with [contrib.rocks](https://contrib.rocks).
