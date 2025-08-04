@@ -1,5 +1,8 @@
 ---
 title: Core Concepts
+description: MCP Practitioner Guide is a community-powered study hub to help you master the MCP exam.
+keywords:
+  - MCP Core Concepts
 sidebar_position: 1
 ---
 
@@ -7,43 +10,42 @@ sidebar_position: 1
 
 Understanding MCP's core concepts is essential for effectively implementing and using the protocol. This section covers the fundamental components and how they work together.
 
+![MCP Architecture](./overview.png)
+
 ## Architecture Overview
 
 MCP follows a client-server architecture with three main components:
 
 ```mermaid
 graph TB
-    subgraph "AI Assistant Environment"
+    subgraph "Host"
         A[AI Assistant] --> B[MCP Client]
     end
     
-    subgraph "MCP Protocol Layer"
+    subgraph "Layers"
         B --> data[Data layer]
+        data --> trasport[Transport layer]
         data --> server[JSON-RPC 2.0]
-        data --> transport[stdio, SSE, Streamable HTTP]
+        trasport --> mechanisms[stdio, SSE, Streamable HTTP]
     end
     
-    subgraph "Resource Provider Environment"
-        transport --> D[MCP Server]
+    subgraph "Server"
+        mechanisms --> D[MCP Server]
         D --> E[Resources]
         D --> F[Tools]
         D --> G[Prompts]
     end
 ```
 
-
-![MCP Architecture](./overview.png)
-
-
 ## Participants
 
 MCP involves three main participants that work together to enable AI assistants to access external resources and capabilities.
 
-### MCP Server
+### 1. MCP Server
 
 The **MCP Server** is the component that provides access to external resources, tools, and capabilities. It acts as a bridge between the AI assistant and various data sources or services.
 
-#### Resources
+#### 1.1 Resources
 **Resources** are read-only data sources that servers expose to clients:
 
 - **File Resources**: Access to local or remote files (documents, code, configurations)
@@ -59,7 +61,7 @@ The **MCP Server** is the component that provides access to external resources, 
 - Support for both text and binary content
 - Can be dynamically discovered and updated
 
-#### Tools
+#### 1.2 Tools
 **Tools** are executable functions that servers provide to perform actions:
 
 - **Data Processing Tools**: Transform, filter, or analyze data
@@ -75,7 +77,7 @@ The **MCP Server** is the component that provides access to external resources, 
 - Support for both synchronous and asynchronous execution
 - Include detailed descriptions and usage examples
 
-#### Prompts
+#### 1.3 Prompts
 **Prompts** are reusable prompt templates that standardize common AI interactions:
 
 - **Analysis Prompts**: Templates for data analysis, code review, or content evaluation
@@ -89,7 +91,7 @@ The **MCP Server** is the component that provides access to external resources, 
 - Can include context from resources or tool outputs
 - Version control and template inheritance
 
-### MCP Host
+### 2. MCP Host
 
 The **MCP Host** is the runtime environment that manages MCP servers and facilitates communication between clients and servers.
 
@@ -108,7 +110,7 @@ The **MCP Host** is the runtime environment that manages MCP servers and facilit
 - **Server Applications**: Cloud-hosted AI services
 - **Mobile Applications**: AI assistants on mobile devices
 
-### MCP Client
+### 3. MCP Client
 
 The **MCP Client** is embedded within AI assistants and handles all MCP protocol communication.
 
@@ -128,11 +130,11 @@ The **MCP Client** is embedded within AI assistants and handles all MCP protocol
 - Response streaming for large datasets
 - Offline mode with cached data
 
-## Layers
+## 4. Layers
 
 MCP is organized into distinct layers that separate concerns and enable flexibility in implementation.
 
-### Data Layer
+### 4.1 Data Layer
 
 The **Data Layer** defines how information is structured and exchanged between MCP components.
 
@@ -155,7 +157,7 @@ The **Data Layer** defines how information is structured and exchanged between M
 - Encryption for sensitive data
 - Access control and permissions
 
-### Transport Layer
+### 4.2 Transport Layer
 
 The **Transport Layer** handles the actual communication between MCP clients and servers.
 
@@ -231,91 +233,3 @@ const transport = new HttpServerTransport({
 });
 ```
 
-## Testing
-
-MCP provides comprehensive testing tools and frameworks to ensure reliable implementations.
-
-### Inspector
-**MCP Inspector** is a debugging and development tool for MCP servers:
-
-**Features:**
-- **Interactive Testing**: Send requests and view responses in real-time
-- **Protocol Validation**: Verify JSON-RPC message compliance
-- **Resource Browser**: Explore available resources and their content
-- **Tool Tester**: Execute tools with custom parameters
-- **Performance Monitoring**: Track response times and resource usage
-- **Error Analysis**: Detailed error reporting and stack traces
-
-**Usage:**
-```bash
-npx @modelcontextprotocol/inspector server.js
-```
-
-### Claude Desktop
-**Claude Desktop** serves as a reference implementation and testing platform:
-
-**Testing Capabilities:**
-- **End-to-end Testing**: Full integration testing with real AI interactions
-- **User Experience Testing**: Validate the complete user workflow
-- **Performance Testing**: Measure real-world performance characteristics
-- **Compatibility Testing**: Ensure compatibility with different server implementations
-
-**Configuration:**
-```json
-{
-  "mcpServers": {
-    "test-server": {
-      "command": "node",
-      "args": ["server.js"]
-    }
-  }
-}
-```
-
-### E2E Test
-**End-to-End Testing Framework** provides automated testing capabilities:
-
-**Test Types:**
-- **Connection Tests**: Verify server startup and client connection
-- **Resource Tests**: Test resource discovery and content retrieval
-- **Tool Tests**: Validate tool execution and error handling
-- **Performance Tests**: Measure throughput and latency
-- **Security Tests**: Verify authentication and authorization
-
-**Example Test:**
-```javascript
-describe('MCP Server E2E Tests', () => {
-  it('should list resources', async () => {
-    const client = new TestClient();
-    await client.connect('node server.js');
-    
-    const resources = await client.listResources();
-    expect(resources).toBeDefined();
-    expect(resources.length).toBeGreaterThan(0);
-  });
-});
-```
-
-### MCP Client
-**MCP Client SDK** includes built-in testing utilities:
-
-**Testing Features:**
-- **Mock Servers**: Create mock servers for unit testing
-- **Test Transports**: In-memory transports for fast testing
-- **Assertion Helpers**: Specialized assertions for MCP protocols
-- **Coverage Analysis**: Track protocol method coverage
-
-**Mock Server Example:**
-```javascript
-const mockServer = new MockMCPServer({
-  resources: [
-    { uri: 'test://resource1', name: 'Test Resource' }
-  ],
-  tools: [
-    { name: 'test_tool', description: 'Test tool' }
-  ]
-});
-
-const client = new MCPClient();
-await client.connect(mockServer.transport);
-```
