@@ -1,0 +1,48 @@
+---
+title: Installation
+sidebar_position: 1
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Installation Guide
+
+This guide covers installing MCP SDKs, tools, and setting up your development environment.
+
+## System Requirements
+
+### Minimum Requirements
+- **Node.js**: 18.0+ (for JavaScript/TypeScript implementations)
+- **Python**: 3.8+ (for Python implementations)
+- **Memory**: 512MB RAM minimum
+- **Storage**: 100MB free space
+
+### Recommended Requirements
+- **Node.js**: 20.0+ LTS
+- **Python**: 3.11+
+- **Memory**: 2GB RAM
+- **Storage**: 1GB free space
+
+## Installation
+<Tabs>
+  <TabItem value="python" label="Python">
+    
+    **Adding MCP to your python project**
+
+    We recommend using [uv](https://docs.astral.sh/uv/) to manage your Python projects. And [Warp](https://www.warp.dev/) for your terminal.
+    
+    ```bash
+    # If you haven't created a uv-managed project yet, create one
+    uv init mcp-server-demo
+    cd mcp-server-demo
+    # Copy the main.py file from the examples directory
+    cp ../main.sample.py ./main.py
+    # Then add MCP to your project dependencies
+    uv add "mcp[cli]"
+    # To run the mcp command with uv
+    uv run mcp dev main.py
+    ```
+ 
+  </TabItem>
+  
+</Tabs>
