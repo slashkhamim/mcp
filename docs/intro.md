@@ -1,47 +1,55 @@
 ---
-title: AWS Certified AI Practitioner Exam Guide
-description: Explore the official guide, content outline, and resources for the AWS Certified AI Practitioner exam, including domains, tasks, and learning steps.
+title: Model Context Protocol (MCP) Documentation
+description: Comprehensive guide to the Model Context Protocol - a standardized protocol for connecting AI assistants with external data sources and tools.
 keywords:
-  - AWS
-  - AI Practitioner
-  - Exam Guide
-  - Certification
-  - Content Outline
-  - Learning Steps
-  - Study Resources
+  - MCP
+  - Model Context Protocol
+  - AI Integration
+  - Protocol
+  - Data Sources
+  - Tools
+  - Servers
+  - Clients
 sidebar_position: 1
 ---
 
-# Content outline
+# Model Context Protocol (MCP)
 
-This exam guide includes weightings, content domains, and task statements for the
-exam. This guide does not provide a comprehensive list of the content on the exam.
-However, additional context for each task statement is available to help you prepare
-for the exam.
+The **Model Context Protocol (MCP)** is an open standard that enables AI assistants to securely connect with external data sources and tools. MCP provides a unified way for AI systems to access and interact with various resources while maintaining security and user control.
 
-The exam has the following content domains and weightings:
+## Documentation Overview
 
-- [**Domain 1**](/docs/category/domain-1-fundamentals-of-ai-and-ml): Fundamentals of AI and ML (**20%** of scored content)
-- [**Domain 2**](/docs/category/domain-2-fundamentals-of-generative-ai): Fundamentals of Generative AI (**24%** of scored content)
-- [**Domain 3**](/docs/category/domain-3-applications-of-foundation-models): Applications of Foundation Models (**28%** of scored content)
-- [**Domain 4**](/docs/category/domain-4-guidelines-for-responsible-ai): Guidelines for Responsible AI (**14%** of scored content)
-- [**Domain 5**](/docs/category/domain-5-security-compliance-and-governance-for-ai-solutions): Security, Compliance, and Governance for AI Solutions (**14%** of
-scored content)
+This documentation is organized into the following sections:
 
-Let’s dive into **these 5 domains**.
+- [**Introduction**](/docs/00-Introduction/intro): What is MCP and why use it
+- [**Core Concepts**](/docs/01-CoreConcepts/overview): Understanding MCP architecture, servers, clients, and resources
+- [**Getting Started**](/docs/02-GettingStarted/quickstart): Quick setup guide and first steps
+- [**Advanced Topics**](/docs/03-AdvancedTopics/custom-servers): Building custom servers, advanced configurations
+- [**Best Practices**](/docs/04-BestPractices/security): Security, performance, and development guidelines
+- [**Security**](/docs/05-Security/authentication): Authentication, authorization, and security considerations
+- [**Deployment**](/docs/06-Deployment/production): Production deployment and scaling strategies
+- [**Appendix**](/docs/Appendix/api-reference): API reference, examples, and troubleshooting
 
-## Learning Steps
+## Key Features
 
-### Courses
+- **🔌 Universal Connectivity**: Connect to databases, APIs, file systems, and more
+- **🔒 Secure by Design**: Built-in security controls and user permission management
+- **🚀 Easy Integration**: Simple setup for both AI assistants and data providers
+- **📊 Rich Data Access**: Support for structured and unstructured data sources
+- **🛠️ Tool Integration**: Execute tools and functions through standardized interfaces
+- **🔄 Real-time Updates**: Live data synchronization and event handling
 
-- [AWS Certified AI Practitioner](https://skillbuilder.aws/category/exam-prep/ai-practitioner)
-- [Ultimate AWS Certified AI Practitioner (Udemy)](https://www.udemy.com/share/10bvGH3@dMEoXyQMr8TyOxq_GvmzW5-dxijo3kQwIIQ50aPL1SdVM5iRMLN2rJOc1NQZXTRwTw==/)
+## Quick Start
 
-### Practice Exam
-- [Quiz](/quiz)
-- [Official Practice Question Set: AWS Certified AI Practitioner (AIF-C01 - English)](https://skillbuilder.aws/learn/4URFGY63KV/official-practice-question-set-aws-certified-ai-practitioner--aifc01--english/FVG43Y1PAX)
-- [Practice Exams (Udemy)](https://www.udemy.com/share/10bvxV3@Zya8zlCVA1fNdyLQjhf2GgpJFi2fyg7-lVdo8uz8CoTvrxqB4V3VIk82dmbs8-hz-A==/)
+Get started with MCP in minutes:
 
-### Review Exam Guide
-- [AWS Certified AI Practitioner Exam Guide (PDF)](https://d1.awsstatic.com/training-and-certification/docs-ai-practitioner/AWS-Certified-AI-Practitioner_Exam-Guide.pdf)
-- [Complete Exam Review](https://genai.practitioner.help/)
+1. **[Install MCP](/docs/02-GettingStarted/installation)** - Set up the MCP runtime
+2. **[Connect a Server](/docs/02-GettingStarted/first-server)** - Add your first data source
+3. **[Use with AI Assistant](/docs/02-GettingStarted/ai-integration)** - Integrate with your AI system
+
+## Community & Support
+
+- **GitHub**: [MCP Repository](https://github.com/modelcontextprotocol/mcp)
+- **Documentation**: [Official Docs](https://modelcontextprotocol.io)
+- **Community**: [Discord Server](https://discord.gg/mcp)
+- **Examples**: [Sample Implementations](/docs/Appendix/examples)
