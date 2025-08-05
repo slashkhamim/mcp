@@ -71,43 +71,41 @@ which uv
 - **Security Tests**: Verify authentication and authorization
 
 **Example Test:**
+
+```bash
+# Main dependencies
+uv add "mcp[cli]" "pytest"
+# Dev dependencies
+uv add "pytest-asyncio" --dev
+```
+
+**test_mcp.py**
+
 ```python
+
 import pytest
+from main import mcp  # Import the actual server instance
 
-from mcp.server.fastmcp import FastMCP
-from mcp.shared.memory import (
-    create_connected_server_and_client_session as create_session,
-)
-
-# Mark the whole module for async tests
-pytestmark = pytest.mark.anyio
-
-async def test_list_tools_cursor_parameter():
-    """Test that the cursor parameter is accepted for list_tools.
-
-    Note: FastMCP doesn't currently implement pagination, so this test
-    only verifies that the cursor parameter is accepted by the client.
-    """
-
-    from .main import create_server
-    server = create_server()
-
-    async with create_session(server._mcp_server) as client_session:
-        # Test without cursor parameter (omitted)
-        result1 = await client_session.list_tools()
-        assert len(result1.tools) == 2
-
-        # Test with cursor=None
-        result2 = await client_session.list_tools(cursor=None)
-        assert len(result2.tools) == 2
-
-        # Test with cursor as string
-        result3 = await client_session.list_tools(cursor="some_cursor_value")
-        assert len(result3.tools) == 2
-
-        # Test with empty string cursor
-        result4 = await client_session.list_tools(cursor="")
-        assert len(result4.tools) == 2
+class TestMCPServerCalls:
+    """Test actual MCP server method calls."""
+    
+    def test_call_add_tool_real(self):
+        """Test calling the real add tool through MCP server."""
+        # Call the actual MCP server's call_tool method with correct signature
+        import asyncio
+        result = asyncio.run(mcp.call_tool("add", {"a": 5, "b": 3}))
+        
+        # Check that we got a result - it's a tuple (content, metadata)
+        assert result is not None
+        assert isinstance(result, tuple)
+        assert len(result) == 2
+        
+        content, metadata = result
+        assert len(content) > 0
+        # The result should be "8" as text
+        assert "8" in str(content[0].text)
+        # Check metadata contains the actual result
+        assert metadata['result'] == 8
     
     
 ```
@@ -121,20 +119,20 @@ async def test_list_tools_cursor_parameter():
 - **Assertion Helpers**: Specialized assertions for MCP protocols
 - **Coverage Analysis**: Track protocol method coverage
 
-**Mock Server Example:**
-```python
-from mcp.client import MCPClient
-from mcp.testing import MockMCPServer
+**Client Example:**
 
-mock_server = MockMCPServer(
-    resources=[
-        {"uri": "test://resource1", "name": "Test Resource"}
-    ],
-    tools=[
-        {"name": "test_tool", "description": "Test tool"}
-    ]
-)
-
-client = MCPClient()
-await client.connect(mock_server.transport)
+```bash
+# If you haven't created a uv-managed project yet, create one
+uv init mcp-server-demo
+cd mcp-server-demo
+# Copy the client.py file from the examples directory
+cp ../client.sample.py ./client.py
+# Copy the interactive_client.py file from the examples directory
+cp ../interactive_client.sample.py ./interactive_client.py
+# Then add MCP to your project dependencies
+uv add "mcp[cli]" 
+# To run the mcp client command with uv
+uv run python client.py 
+# Or to run the mcp interactive client command with uv
+uv run python interactive_client.py 
 ```

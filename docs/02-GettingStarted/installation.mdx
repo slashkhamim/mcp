@@ -35,12 +35,12 @@ This guide covers installing MCP SDKs, tools, and setting up your development en
     # If you haven't created a uv-managed project yet, create one
     uv init mcp-server-demo
     cd mcp-server-demo
-    # Copy the main.py file from the examples directory
-    cp ../main.sample.py ./main.py
+    # Copy the server.py file from the examples directory
+    cp ../server.sample.py ./server.py
     # Then add MCP to your project dependencies
     uv add "mcp[cli]"
     # To run the mcp command with uv
-    uv run mcp dev main.py
+    uv run mcp dev server.py
     ```
  
   </TabItem>

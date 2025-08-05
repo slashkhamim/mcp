@@ -20,5 +20,3 @@ yarn-debug.log*
 yarn-error.log*
 
 mcp-server-demo
-!mcp-server-demo/test_*.py
-!mcp-server-demo/*_test.py
