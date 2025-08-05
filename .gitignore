@@ -20,3 +20,6 @@ yarn-debug.log*
 yarn-error.log*
 
 mcp-server-demo
+
+__pycache__
+.venv

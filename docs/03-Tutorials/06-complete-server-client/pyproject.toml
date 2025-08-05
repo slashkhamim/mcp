@@ -1,0 +1,10 @@
+[project]
+name = "06-complete-server-client"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp[cli]>=1.12.3",
+    "streamlit>=1.47.1",
+]

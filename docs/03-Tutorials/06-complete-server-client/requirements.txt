@@ -1,0 +1,21 @@
+# MCP Task Manager Tutorial Dependencies
+
+# Core MCP framework
+mcp[cli]
+
+# Web interface
+streamlit
+
+# Note: The following are built into Python and don't need to be installed:
+# - sqlite3
+# - datetime
+# - json
+# - pathlib
+# - asyncio
+# - threading
+# - queue
+# - re
+
+# Development and testing (optional)
+# pytest
+# pytest-asyncio
