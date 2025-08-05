@@ -153,17 +153,17 @@ def file_script(operation: str, target: str, language: str = "bash") -> str:
     
     return f"""Generate a {language} script to {operations[operation]}.
 
-Requirements:
-- Include error handling
-- Add logging/output messages
-- Make it safe (no destructive operations without confirmation)
-- Include comments explaining each step
-- Handle edge cases (missing files, permissions, etc.)
+        Requirements:
+        - Include error handling
+        - Add logging/output messages
+        - Make it safe (no destructive operations without confirmation)
+        - Include comments explaining each step
+        - Handle edge cases (missing files, permissions, etc.)
 
-Target: {target}
-Language: {language}
+        Target: {target}
+        Language: {language}
 
-Please provide a complete, production-ready script."""
+        Please provide a complete, production-ready script."""
 
 @mcp.prompt()
 def file_documentation(path: str, doc_type: str = "README") -> str:
@@ -179,14 +179,14 @@ def file_documentation(path: str, doc_type: str = "README") -> str:
     
     return f"""Generate {selected_type} for the project/directory at: {path}
 
-Please analyze the structure and contents, then create:
-- Clear project description
-- Installation/setup instructions
-- Usage examples
-- File/directory structure explanation
-- Any relevant configuration details
+        Please analyze the structure and contents, then create:
+        - Clear project description
+        - Installation/setup instructions
+        - Usage examples
+        - File/directory structure explanation
+        - Any relevant configuration details
 
-Make it comprehensive and user-friendly."""
+        Make it comprehensive and user-friendly."""
 
 if __name__ == "__main__":
     # Run the server

@@ -121,7 +121,7 @@ uv run mcp run server.py
 In another terminal, start the beautiful web interface:
 ```bash
 uv add streamlit
-streamlit run streamlit_app.py
+uv run streamlit run streamlit_app.py
 ```
 
 ### Option 2: Command Line Interface

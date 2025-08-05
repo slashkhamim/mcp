@@ -36,13 +36,50 @@ file-system-server/
 
 ## Step 1: Setup
 
-Create a new project:
+```bash
+uv sync
+```
+
+## Step 2: Run the Server
 
 ```bash
-uv init file-system-server
-cd file-system-server
-uv add "mcp[cli]" "pathlib"
+# Option 1: Run with main.py
+uv run python main.py
+
+# Option 2: Run with MCP CLI (development mode)
+uv run mcp dev main.py
+
+# Option 3: Run server directly
+uv run mcp run server.py
 ```
+
+## Step 3: Test the Server
+
+Run the comprehensive test suite:
+
+```bash
+# Run all tests
+uv run pytest test_server.py
+
+# Run tests with verbose output
+uv run pytest test_server.py -v
+
+# Run specific test class
+uv run pytest test_server.py::TestFileSystemMCPServer
+
+# Run specific test method
+uv run pytest test_server.py::TestFileSystemMCPServer::test_read_file_success
+```
+
+### Test Coverage
+
+The test suite covers:
+- ✅ **All Tools**: read_file, write_file, create_directory, delete_file, list_directory, file_info
+- ✅ **All Resources**: fs://dir/{path}, fs://file/{path}
+- ✅ **All Prompts**: file_script, file_documentation
+- ✅ **Security**: Path validation and safety checks
+- ✅ **Performance**: Large files and many files handling
+- ✅ **Integration**: Complete workflows
 
 ## Next Steps
 
