@@ -391,7 +391,7 @@ def main():
     import os
     
     # Get port from environment variable or use default
-    port = int(os.getenv("PORT", 7979))
+    port = int(os.getenv("PORT", 8080))
     host = os.getenv("HOST", "0.0.0.0")
     
     # For SSE transport (HTTP server)
