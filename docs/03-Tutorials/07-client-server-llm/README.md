@@ -208,3 +208,36 @@ The client provides natural language interaction:
 - **"Help me plan..."** - Uses prompts for planning
 - **"What tasks are due today?"** - Smart filtering
 - **"Break down this task..."** - Task decomposition
+
+## 🚀 Deployment to Streamlit Cloud
+
+### Prerequisites for Cloud Deployment
+- GitHub repository with your code
+- OpenAI API key
+- Note: The MCP server component cannot run on Streamlit Cloud (it only supports the Streamlit app)
+
+### Step 1: Prepare Your Repository
+
+1. **Push your code to GitHub** (make sure `.env` is in `.gitignore`)
+2. **The code is already configured** to work with both local `.env` files and Streamlit Cloud secrets
+
+### Step 2: Deploy to Streamlit Cloud
+
+1. **Go to** [share.streamlit.io](https://share.streamlit.io)
+2. **Sign in** with your GitHub account
+3. **Click "New app"**
+4. **Select your repository** and branch
+5. **Set main file path**: `docs/03-Tutorials/07-client-server-llm/start_client.py`
+6. **Click "Deploy"**
+
+### Step 3: Configure Secrets
+
+1. **In your Streamlit Cloud dashboard**, go to your app settings
+2. **Click the "Secrets" tab**
+3. **Add your secrets** in TOML format:
+
+```toml
+JIRA_MCP_SERVER_URL = "https://your-mcp-server-url.com/sse"
+OPEN_AI_MODEL = "gpt-4o-mini"
+OPENAI_API_KEY = "sk-your-actual-openai-api-key-here"
+```

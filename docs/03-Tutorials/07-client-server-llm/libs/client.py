@@ -4,24 +4,52 @@ import json
 import asyncio
 from contextlib import AsyncExitStack
 from typing import Any, Dict, List, Optional
-from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+try:
+    import streamlit as st
+    STREAMLIT_AVAILABLE = True
+except ImportError:
+    STREAMLIT_AVAILABLE = False
+
+try:
+    from dotenv import load_dotenv
+    # Load environment variables from .env file (for local development)
+    load_dotenv()
+except ImportError:
+    pass
 
 from mcp import ClientSession
 from mcp.client.sse import sse_client
 from openai import AsyncOpenAI
 
 
+def get_secret(key: str, default: str = None) -> str:
+    """Get secret from Streamlit secrets first, then fallback to environment variables"""
+    # Try Streamlit secrets first (for cloud deployment or when running in Streamlit)
+    if STREAMLIT_AVAILABLE and hasattr(st, 'secrets'):
+        try:
+            value = st.secrets.get(key)
+            if value:  # If value exists and is not empty
+                return value
+        except (KeyError, FileNotFoundError, AttributeError):
+            pass
+    
+    # Fallback to environment variables (for local development with .env)
+    return os.getenv(key, default)
+
+
 class JiraMcpClient:
     def __init__(self):
         self.session: Optional[ClientSession] = None
         self.exit_stack = AsyncExitStack()
-        self.openai_client = AsyncOpenAI()
-        self.model = os.getenv("OPEN_AI_MODEL")
-        self.jira_mcp_server_url = os.getenv("JIRA_MCP_SERVER_URL")
+        
+        # Get secrets from Streamlit secrets or environment variables
+        api_key = get_secret("OPENAI_API_KEY")
+        self.openai_client = AsyncOpenAI(api_key=api_key)
+        self.model = get_secret("OPEN_AI_MODEL", "gpt-4o-mini")
+        self.jira_mcp_server_url = get_secret("JIRA_MCP_SERVER_URL", "http://localhost:9999/sse")
 
+        print(self.jira_mcp_server_url, api_key)
         # Keep a persistent event loop
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
