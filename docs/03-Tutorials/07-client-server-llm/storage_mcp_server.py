@@ -388,12 +388,19 @@ Make recommendations practical and immediately actionable."""
 
 def main():
     """Main entry point for the MCP server"""
+    import os
+    
+    # Get port from environment variable or use default
+    port = int(os.getenv("PORT", 9090))
+    host = os.getenv("HOST", "0.0.0.0")
+    
     # For SSE transport (HTTP server)
     print("🚀 Starting MCP server with SSE transport...")
-    print("📡 Server will be available at: http://localhost:9999")
-    print("📡 Your MCP endpoint: http://localhost:9999/sse")
+    print(f"📡 Server will be available at: http://{host}:{port}")
+    print(f"📡 Your MCP endpoint: http://{host}:{port}/sse")
+    
     app = mcp.sse_app
-    uvicorn.run(app, host="0.0.0.0", port=9999)
+    uvicorn.run(app, host=host, port=port)
     # mcp.run(transport='stdio')
 
 if __name__ == "__main__":
