@@ -39,9 +39,21 @@ st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 st.markdown('<div class="chat-header">Streamlit MCP Client Demo</div>', unsafe_allow_html=True)
 st.markdown('<div class="chat-header-divider">', unsafe_allow_html=True)
 
+
+startMessage = ''' 
+The client provides natural language interaction:
+
+- **"Create a task to..."** - Creates new tasks
+- **"Show me..."** - Lists and filters tasks  
+- **"Complete the..."** - Marks tasks as done
+- **"Help me plan..."** - Uses prompts for planning
+- **"What tasks are due today?"** - Smart filtering
+- **"Break down this task..."** - Task decomposition
+'''
+
 # --- Chat Memory ---
 if "messages" not in st.session_state:
-    st.session_state.messages = [{"role": "assistant", "content": "Let's start chatting! 👇"}]
+    st.session_state.messages = [{"role": "assistant", "content": startMessage}]
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
