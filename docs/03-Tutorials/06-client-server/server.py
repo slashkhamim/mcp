@@ -10,8 +10,8 @@ import json
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any, List
 from mcp.server.fastmcp import FastMCP
-from task_manager import TaskManager
-from storage import StorageManager
+from libs.task_manager import TaskManager
+from libs.storage import StorageManager
 
 # Create MCP server
 mcp = FastMCP("TaskManager")

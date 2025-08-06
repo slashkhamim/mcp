@@ -447,10 +447,15 @@ What would you like to do today?"""
         st.markdown("#### 🔌 Connection Status")
         if st.button("🔄 Check Server Connection"):
             try:
-                # This would check the actual connection in a real implementation
-                st.success("✅ Server is running")
-            except:
-                st.error("❌ Server not responding")
+                # Test actual connection to MCP server
+                test_response = asyncio.run(process_message_async(st.session_state.client, "help"))
+                if "Error connecting to server" in test_response:
+                    st.error("❌ Server not responding")
+                    st.error(test_response)
+                else:
+                    st.success("✅ Server is running")
+            except Exception as e:
+                st.error(f"❌ Server not responding: {str(e)}")
         
         st.markdown("---")
         
@@ -504,8 +509,8 @@ What would you like to do today?"""
         # Process and add assistant response
         with st.spinner("🤖 Processing..."):
             try:
-                # In a real implementation, you'd run the async function properly
-                response = f"I would process: '{quick_action}'\n\n(Note: This is a demo. In the real implementation, this would connect to the MCP server and process your request.)"
+                # Use the actual async connection to MCP server
+                response = asyncio.run(process_message_async(st.session_state.client, quick_action))
                 
                 st.session_state.messages.append({
                     "role": "assistant", 
@@ -529,16 +534,8 @@ What would you like to do today?"""
         # Process and add assistant response
         with st.spinner("🤖 Processing your request..."):
             try:
-                # In a real implementation, you'd run the async function properly
-                # For demo purposes, we'll simulate a response
-                if "create" in user_input.lower() and "task" in user_input.lower():
-                    response = f"✅ I would create a task based on: '{user_input}'\n\n(Note: This is a demo interface. To see the full functionality, run the MCP server and use the async client.)"
-                elif "show" in user_input.lower() or "list" in user_input.lower():
-                    response = f"📋 I would show you tasks based on: '{user_input}'\n\n(Note: This is a demo interface. To see the full functionality, run the MCP server and use the async client.)"
-                elif "help" in user_input.lower():
-                    response = st.session_state.client.get_help_message()
-                else:
-                    response = st.session_state.client.handle_unclear_input(user_input)
+                # Use the actual async connection to MCP server
+                response = asyncio.run(process_message_async(st.session_state.client, user_input))
                 
                 st.session_state.messages.append({
                     "role": "assistant",

@@ -26,15 +26,19 @@ By the end of this tutorial, you'll understand:
 ## Project Structure
 
 ```
-complete-server-client/
-├── README.md           # This tutorial guide
-├── server.py           # Complete MCP server implementation
-├── client.py           # Interactive command-line client
-├── streamlit_app.py    # Beautiful web-based chat UI
-├── task_manager.py     # Task management logic
-├── storage.py          # Data persistence
-├── demo.py             # Quick demonstration
-└── requirements.txt    # Dependencies
+06-client-server/
+├── README.md                           # This tutorial guide
+├── server.py                           # Complete MCP server implementation
+├── client_terminal.py                  # Interactive command-line client
+├── client_demo.py                      # Quick demonstration client
+├── client_streamlit_local_nlp_v1.py    # Basic Streamlit web UI
+├── client_streamlit_local_nlp_v2.py    # Advanced Streamlit chat UI
+├── pyproject.toml                      # Project configuration
+├── uv.lock                             # Dependency lock file
+├── tasks.db                            # SQLite database for tasks
+└── libs/                               # Supporting libraries
+    ├── task_manager.py                 # Task management logic
+    └── storage.py                      # Data persistence
 ```
 
 ## What Makes This Special
@@ -99,41 +103,77 @@ How can I help you manage your tasks today?
 6. Format and finalize document
 ```
 
+## Client Implementations
+
+This tutorial includes **four different client implementations** to demonstrate various approaches to MCP integration:
+
+### 🖥️ **Terminal Client** (`client_terminal.py`)
+- **Interactive command-line interface** with natural language processing
+- **Real-time MCP connection** using async/await patterns
+- **Best for**: Learning MCP basics, debugging, and automation
+- **Features**: Full async support, error handling, connection status
+
+### 🚀 **Demo Client** (`client_demo.py`)
+- **Quick demonstration** of core MCP functionality
+- **Simple examples** of tools, resources, and prompts
+- **Best for**: Understanding MCP concepts quickly
+- **Features**: Minimal setup, clear examples, educational focus
+
+### 🌐 **Basic Streamlit App** (`client_streamlit_app1.py`)
+- **Simple web interface** with basic MCP integration
+- **Form-based interaction** for task management
+- **Best for**: Simple web UIs, form-based workflows
+- **Features**: Web forms, basic styling, straightforward layout
+
+### 💬 **Advanced Streamlit Chat** (`client_streamlit_app2.py`)
+- **ChatGPT-like interface** with full MCP integration
+- **Natural language chat** with beautiful UI
+- **Best for**: Production-like chat experiences
+- **Features**: Chat interface, async MCP connection, modern UI, real-time responses
+
 ## Step 1: Setup
 
-Create a new project:
+Navigate to the tutorial directory:
 
 ```bash
-uv init complete-server-client
-cd complete-server-client
-uv add "mcp[cli]"
+cd docs/03-Tutorials/06-client-server
+```
+
+The project is already configured with `pyproject.toml` and dependencies.
+
+Install dependencies:
+```bash
+uv sync
 ```
 
 ## Step 2: Run the System
 
-### Option 1: Web Interface (Recommended)
+### Option 1: Advanced Chat Interface (Recommended)
 
-Start the server:
+Start the advanced chat interface:
 ```bash
-uv run mcp run server.py
+uv run streamlit run client_streamlit_app2.py
 ```
 
-In another terminal, start the beautiful web interface:
+### Option 2: Basic Web Interface
+
+Start the basic web interface:
 ```bash
-uv add streamlit
-uv run streamlit run streamlit_app.py
+uv run streamlit run client_streamlit_app1.py
 ```
 
-### Option 2: Command Line Interface
+### Option 3: Terminal Interface
 
-Start the server:
+Start the interactive terminal client:
 ```bash
-uv run mcp run server.py
+uv run python client_terminal.py
 ```
 
-In another terminal, start the interactive client:
+### Option 4: Quick Demo
+
+Start the demo:
 ```bash
-uv run python client.py
+uv run python client_demo.py
 ```
 
 ## Step 3: Try It Out
@@ -146,48 +186,3 @@ The client provides natural language interaction:
 - **"Help me plan..."** - Uses prompts for planning
 - **"What tasks are due today?"** - Smart filtering
 - **"Break down this task..."** - Task decomposition
-
-## Features Demonstrated
-
-### 🎯 **Natural Language Processing**
-The client interprets natural language commands and maps them to appropriate MCP tool calls.
-
-### 🔄 **Real-time Updates**
-Changes made through tools are immediately reflected in resources and the client interface.
-
-### 💾 **Data Persistence**
-All tasks and data are stored in SQLite database with proper schema management.
-
-### 🧠 **Smart Prompts**
-AI-powered prompts help with task planning, breakdown, and productivity optimization.
-
-### ⚡ **Interactive Experience**
-The client feels like chatting with an assistant, not using a command-line tool.
-
-## Advanced Features
-
-- **Context Awareness** - Client remembers conversation context
-- **Smart Suggestions** - Proactive recommendations based on task patterns
-- **Batch Operations** - Handle multiple tasks in one command
-- **Natural Language Queries** - "What did I accomplish this week?"
-- **Integration Ready** - Easy to extend with calendar, email, etc.
-
-## Why This Tutorial Matters
-
-This tutorial shows you how to:
-
-1. **Build Production Systems** - Real database, error handling, logging
-2. **Create Great UX** - Natural language interface that users love
-3. **Integrate Everything** - Tools, resources, and prompts working together
-4. **Handle Complexity** - Task relationships, priorities, projects
-5. **Scale Properly** - Architecture that can grow with requirements
-
-## Next Steps
-
-After completing this tutorial, you'll be ready to:
-- Build your own MCP servers for any domain
-- Create interactive clients for better user experience
-- Integrate MCP systems into larger applications
-- Design natural language interfaces for technical systems
-
-Let's get started! 🚀
