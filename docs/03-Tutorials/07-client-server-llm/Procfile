@@ -1,1 +1,1 @@
-web: python storage_mcp_server.py
+web: python app.py

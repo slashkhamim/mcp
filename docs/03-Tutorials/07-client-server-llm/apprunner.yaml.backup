@@ -5,17 +5,16 @@ build:
     build:
       - echo "Build started on `date`"
       - echo "Installing Python dependencies..."
-      - python3 -m pip install --upgrade pip
-      - python3 -m pip install -r requirements.txt
+      - pip3 install --upgrade pip
+      - pip3 install -r requirements.txt
 run:
   runtime-version: 3.11
   command: python3 storage_mcp_server.py
   network:
     port: 8080
+    env: PORT
   env:
     - name: PORT
       value: "8080"
     - name: HOST
       value: "0.0.0.0"
-    - name: PYTHONPATH
-      value: "/app"
