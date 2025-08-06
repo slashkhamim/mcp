@@ -1,0 +1,17 @@
+version: 1.0
+runtime: python3
+build:
+  commands:
+    build:
+      - echo "Build started on `date`"
+      - pip install -r requirements.txt
+run:
+  runtime-version: 3.11
+  command: python storage_mcp_server.py
+  network:
+    port: 8080
+  env:
+    - name: PORT
+      value: "8080"
+    - name: HOST
+      value: "0.0.0.0"
