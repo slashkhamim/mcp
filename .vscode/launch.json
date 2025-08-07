@@ -1,0 +1,108 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug: FastMCP Server",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/storage_mcp_server.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss",
+            "python": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss"
+            },
+            "args": [],
+            "justMyCode": false
+        },
+        {
+            "name": "Debug: Streamlit Client (Direct)",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/start_client.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss",
+            "python": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss"
+            },
+            "args": [],
+            "justMyCode": false
+        },
+        {
+            "name": "Debug: Streamlit via UV",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "/Users/yinseng/.local/bin/uv",
+            "args": [
+                "run",
+                "streamlit",
+                "run",
+                "start_client.py",
+                "--server.port",
+                "8501"
+            ],
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss"
+            },
+            "justMyCode": false
+        },
+        {
+            "name": "Debug: Local LLM Client",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/libs/local_llm_client.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss",
+            "python": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss"
+            },
+            "args": [],
+            "justMyCode": false
+        },
+        {
+            "name": "Debug: Task Manager",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/libs/task_manager.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss",
+            "python": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss"
+            },
+            "args": [],
+            "justMyCode": false
+        },
+        {
+            "name": "Debug: Test Connection",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/test_connection.py",
+            "console": "integratedTerminal",
+            "cwd": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss",
+            "python": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/.venv/bin/python",
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss"
+            },
+            "args": [],
+            "justMyCode": false
+        },
+        {
+            "name": "Debug: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "cwd": "${fileDirname}",
+            "python": "${workspaceFolder}/docs/03-Tutorials/08-client-server-gpt-oss/.venv/bin/python",
+            "justMyCode": false
+        }
+    ]
+}
