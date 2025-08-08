@@ -1,14 +1,10 @@
 """
-Local LLM Client for MCP integration with open-source models.
-Supports both Ollama and Transformers backends.
+Local LLM Client for chatting with multiple backends.
+Supports OpenAI-compatible (AsyncOpenAI), Ollama, and Transformers backends.
 """
 import asyncio
-import json
 import os
-from typing import Dict, List, Any, Optional, AsyncGenerator
-import httpx
-from mcp import ClientSession, StdioServerParameters
-from mcp.client.stdio import stdio_client
+from typing import Dict, List, Any, AsyncGenerator
 
 # Optional imports for different LLM providers
 try:
@@ -16,6 +12,13 @@ try:
     OLLAMA_AVAILABLE = True
 except ImportError:
     OLLAMA_AVAILABLE = False
+
+# OpenAI-compatible client (AsyncOpenAI)
+try:
+    from openai import AsyncOpenAI
+    OPENAI_AVAILABLE = True
+except ImportError:
+    OPENAI_AVAILABLE = False
 
 try:
     from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline
@@ -25,18 +28,20 @@ except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
 class LocalLLMClient:
-    def __init__(self, provider: str = "ollama", model_name: str = "llama2:7b", 
-                 mcp_server_url: str = None):
+    def __init__(self, provider: str = "openai", model_name: str = "gpt-4o-mini"):
         self.provider = provider.lower()
         self.model_name = model_name
-        self.mcp_server_url = mcp_server_url or os.getenv("MCP_SERVER_URL", "http://localhost:8000/sse")
-        self.mcp_session = None
-        self.tools = []
-        self.resources = []
-        self.prompts = []
         
         # Initialize LLM based on provider
-        if self.provider == "ollama" and OLLAMA_AVAILABLE:
+        if self.provider == "openai" and OPENAI_AVAILABLE:
+            # Allow custom base_url for local OpenAI-compatible servers
+            base_url = os.getenv("OPENAI_BASE_URL")
+            api_key = os.getenv("OPENAI_API_KEY", "")
+            # AsyncOpenAI requires an API key even for some local proxies; provide dummy if not set
+            if not api_key:
+                api_key = "not-set"
+            self.client = AsyncOpenAI(base_url=base_url, api_key=api_key) if base_url else AsyncOpenAI(api_key=api_key)
+        elif self.provider == "ollama" and OLLAMA_AVAILABLE:
             self.ollama_host = os.getenv("OLLAMA_HOST", "http://localhost:11434")
             self.client = ollama.Client(host=self.ollama_host)
         elif self.provider == "transformers" and TRANSFORMERS_AVAILABLE:
@@ -73,6 +78,20 @@ class LocalLLMClient:
                 
         except Exception as e:
             raise RuntimeError(f"Failed to initialize Transformers model: {e}")
+    
+    async def generate_response(self, messages: List[Dict[str, str]]) -> AsyncGenerator[str, None]:
+        """Dispatch chat generation to the selected provider."""
+        if self.provider == "openai":
+            async for chunk in self.generate_response_openai(messages):
+                yield chunk
+        elif self.provider == "ollama":
+            async for chunk in self.generate_response_ollama(messages):
+                yield chunk
+        elif self.provider == "transformers":
+            async for chunk in self.generate_response_transformers(messages):
+                yield chunk
+        else:
+            yield f"Unsupported provider: {self.provider}"
     
     async def connect_to_mcp_server(self):
         """Connect to FastMCP server via SSE stream and discover capabilities."""
@@ -236,17 +255,54 @@ class LocalLLMClient:
     async def call_mcp_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Call an MCP tool with given arguments."""
         try:
-            async with httpx.AsyncClient() as client:
+            # Use FastMCP JSON-RPC endpoint instead of a RESTful /tools path
+            base_url = self.mcp_server_url.replace('/sse', '')
+            payload = {
+                "jsonrpc": "2.0",
+                "id": 100,
+                "method": "tools/call",
+                "params": {
+                    "name": tool_name,
+                    "arguments": arguments or {}
+                }
+            }
+            async with httpx.AsyncClient(timeout=20.0) as client:
                 response = await client.post(
-                    f"{self.mcp_server_url}/tools/{tool_name}",
-                    json={"arguments": arguments}
+                    f"{base_url}/mcp",
+                    json=payload,
+                    headers={"Content-Type": "application/json"}
                 )
-                if response.status_code == 200:
-                    return response.json()
-                else:
-                    return {"error": f"Tool call failed: {response.text}"}
+                if response.status_code != 200:
+                    return {"error": f"Tool call HTTP {response.status_code}: {response.text}"}
+
+                data = response.json()
+                # Return the result section if present, else full payload
+                if isinstance(data, dict) and "result" in data:
+                    return data["result"]
+                return data
         except Exception as e:
             return {"error": f"Failed to call tool: {e}"}
+
+    def _build_openai_tools(self) -> List[Dict[str, Any]]:
+        """Convert discovered MCP tools to OpenAI tools schema (for native tool calling)."""
+        openai_tools: List[Dict[str, Any]] = []
+        for t in self.tools:
+            name = t.get("name")
+            desc = t.get("description", "")
+            schema = t.get("inputSchema", {"type": "object", "properties": {}})
+            # Ensure schema has properties
+            if "properties" not in schema:
+                schema["properties"] = {}
+            # Map to OpenAI tool format
+            openai_tools.append({
+                "type": "function",
+                "function": {
+                    "name": name,
+                    "description": desc,
+                    "parameters": schema,
+                },
+            })
+        return openai_tools
     
     def _format_system_prompt(self) -> str:
         """Create a system prompt that includes MCP tool information."""
@@ -337,230 +393,93 @@ For example:
             print(f"✅ Final tool call: {current_tool} with args: {current_args}")
         
         return tool_calls
+
+    async def generate_response_openai(self, messages: List[Dict[str, str]]) -> AsyncGenerator[str, None]:
+        """Generate a simple assistant response using AsyncOpenAI (no tools)."""
+        if not OPENAI_AVAILABLE:
+            yield "OpenAI client is not installed. Run: pip install openai"
+            return
+
+        # Construct a simple system prompt
+        system_prompt = "You are a helpful AI assistant. Be concise and friendly."
+        chat_messages: List[Dict[str, Any]] = [{"role": "system", "content": system_prompt}]
+        for m in messages:
+            chat_messages.append({"role": m["role"], "content": m["content"]})
+        try:
+            resp = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=chat_messages,
+                temperature=0.7,
+            )
+            choice = resp.choices[0]
+            msg = choice.message
+            if msg.content:
+                yield msg.content
+        except Exception as e:
+            yield f"Error from OpenAI client: {e}"
+
     
     async def generate_response_ollama(self, messages: List[Dict[str, str]]) -> AsyncGenerator[str, None]:
-        """Generate response using Ollama with multiple tool calling approaches."""
+        """Generate response using Ollama (no tools)."""
         try:
-            # Prepare the prompt - use basic prompt if no MCP tools available
-            if self.tools:
-                system_prompt = self._format_system_prompt()
-            else:
-                system_prompt = "You are a helpful AI assistant. Respond to user queries in a friendly and informative manner."
+            # Prepare a simple system prompt
+            system_prompt = "You are a helpful AI assistant. Respond to user queries in a friendly and informative manner."
             
             # Format messages for Ollama
             prompt = f"System: {system_prompt}\n\n"
             for msg in messages:
                 prompt += f"{msg['role'].title()}: {msg['content']}\n"
             prompt += "Assistant: "
-            
-            # Try structured output first (for compatible models)
-            if self.tools and self._supports_structured_output():
-                async for chunk in self._generate_with_structured_output(prompt):
-                    yield chunk
-            else:
-                # Fallback to prompt engineering approach
-                async for chunk in self._generate_with_prompt_parsing(prompt):
-                    yield chunk
-                    
+
+            # Simple generation streaming
+            response = self.client.generate(
+                model=self.model_name,
+                prompt=prompt,
+                stream=True
+            )
+            for chunk in response:
+                if 'response' in chunk:
+                    yield chunk['response']
+        
         except Exception as e:
             yield f"Error generating response: {e}"
     
-    def _supports_structured_output(self) -> bool:
-        """Check if the current model supports structured output."""
-        # Models known to support structured output
-        structured_models = [
-            'llama3.1', 'llama3.2', 'qwen2.5', 'mistral-nemo', 
-            'gemma2', 'phi3.5', 'codegemma'
-        ]
-        return any(model in self.model_name.lower() for model in structured_models)
-    
-    async def _generate_with_structured_output(self, prompt: str) -> AsyncGenerator[str, None]:
-        """Generate response using structured output for tool calling."""
-        try:
-            # Create a schema for tool calls
-            tool_schema = {
-                "type": "object",
-                "properties": {
-                    "response": {"type": "string", "description": "Natural language response to user"},
-                    "tool_calls": {
-                        "type": "array",
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {"type": "string"},
-                                "arguments": {"type": "object"}
-                            }
-                        }
-                    }
-                }
-            }
-            
-            # Generate with format constraint
-            response = self.client.generate(
-                model=self.model_name,
-                prompt=prompt + "\n\nRespond in JSON format with 'response' and 'tool_calls' fields.",
-                format="json",
-                stream=False
-            )
-            
-            if 'response' in response:
-                try:
-                    result = json.loads(response['response'])
-                    
-                    # Yield the natural response
-                    if 'response' in result:
-                        yield result['response']
-                    
-                    # Execute tool calls if present
-                    if 'tool_calls' in result and result['tool_calls']:
-                        yield "\n\n🔧 *Executing tools...*\n\n"
-                        for tool_call in result['tool_calls']:
-                            if 'name' in tool_call and 'arguments' in tool_call:
-                                result = await self.call_mcp_tool(tool_call['name'], tool_call['arguments'])
-                                yield f"**{tool_call['name']}**: {json.dumps(result, indent=2)}\n\n"
-                                
-                except json.JSONDecodeError:
-                    # Fallback to prompt parsing if JSON parsing fails
-                    async for chunk in self._generate_with_prompt_parsing(prompt):
-                        yield chunk
-                        
-        except Exception as e:
-            print(f"Structured output failed: {e}, falling back to prompt parsing")
-            async for chunk in self._generate_with_prompt_parsing(prompt):
-                yield chunk
-    
-    async def _generate_with_prompt_parsing(self, prompt: str) -> AsyncGenerator[str, None]:
-        """Generate response using prompt engineering and parsing (fallback method)."""
-        # Generate response
-        response = self.client.generate(
-            model=self.model_name,
-            prompt=prompt,
-            stream=True
-        )
-        
-        full_response = ""
-        for chunk in response:
-            if 'response' in chunk:
-                text = chunk['response']
-                full_response += text
-                yield text
-        
-        # Check for tool calls in the response (only if MCP tools are available)
-        if self.tools:
-            tool_calls = self._extract_tool_calls(full_response)
-            if tool_calls:
-                yield "\n\n🔧 *Executing tools...*\n\n"
-                for tool_call in tool_calls:
-                    result = await self.call_mcp_tool(tool_call['name'], tool_call['arguments'])
-                    yield f"**{tool_call['name']}**: {json.dumps(result, indent=2)}\n\n"
     
     async def generate_response_transformers(self, messages: List[Dict[str, str]]) -> AsyncGenerator[str, None]:
-        """Generate response using Transformers."""
+        """Generate response using Transformers (no tools)."""
         try:
-            # Get the last user message for seq2seq models
+            # Build a simple prompt
             if hasattr(self, 'is_seq2seq') and self.is_seq2seq:
-                # For seq2seq models like Flan-T5, use a simpler prompt format
-                if messages:
-                    last_message = messages[-1]['content']
-                    if self.tools:
-                        prompt = f"You are a helpful AI assistant with task management capabilities. Answer this question: {last_message}"
-                    else:
-                        prompt = f"Answer this question helpfully: {last_message}"
-                else:
-                    prompt = "Hello! How can I help you today?"
+                last = messages[-1]['content'] if messages else "Hello! How can I help you today?"
+                prompt = f"Answer this question helpfully: {last}"
             else:
-                # For causal LM models, use the full conversation format
-                if self.tools:
-                    system_prompt = self._format_system_prompt()
-                else:
-                    system_prompt = "You are a helpful AI assistant. Respond to user queries in a friendly and informative manner."
-                
+                system_prompt = "You are a helpful AI assistant. Respond to user queries in a friendly and informative manner."
                 prompt = f"System: {system_prompt}\n\n"
                 for msg in messages:
                     prompt += f"{msg['role'].title()}: {msg['content']}\n"
                 prompt += "Assistant: "
-            
-            # Tokenize with attention mask
-            encoded = self.tokenizer(
-                prompt, 
-                return_tensors="pt", 
-                padding=True, 
-                truncation=True,
-                max_length=512  # Shorter for better performance
-            )
+
+            encoded = self.tokenizer(prompt, return_tensors="pt", padding=True, truncation=True, max_length=512)
             inputs = encoded['input_ids']
             attention_mask = encoded['attention_mask']
-            
-            # Generate with appropriate parameters for the model type
+
+            import torch
             with torch.no_grad():
                 if hasattr(self, 'is_seq2seq') and self.is_seq2seq:
-                    # Seq2seq generation
-                    outputs = self.model.generate(
-                        inputs,
-                        attention_mask=attention_mask,
-                        max_new_tokens=256,
-                        temperature=0.7,
-                        do_sample=True,
-                        pad_token_id=self.tokenizer.pad_token_id
-                    )
-                    # For seq2seq, decode the entire output
-                    response = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
+                    outputs = self.model.generate(inputs, attention_mask=attention_mask, max_new_tokens=256, temperature=0.7, do_sample=True, pad_token_id=self.tokenizer.pad_token_id)
+                    text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
                 else:
-                    # Causal LM generation
-                    outputs = self.model.generate(
-                        inputs,
-                        attention_mask=attention_mask,
-                        max_new_tokens=256,
-                        temperature=0.7,
-                        do_sample=True,
-                        pad_token_id=self.tokenizer.eos_token_id,
-                        eos_token_id=self.tokenizer.eos_token_id
-                    )
-                    # For causal LM, decode only the new tokens
-                    response = self.tokenizer.decode(outputs[0][inputs.shape[1]:], skip_special_tokens=True)
-            
-            # Clean up the response
-            response = response.strip()
-            if not response:
-                response = "I'm here to help! What would you like to know?"
-            
-            # Stream the response word by word for better UX
-            words = response.split()
-            for word in words:
-                yield word + " "
-                await asyncio.sleep(0.03)  # Faster streaming
-            
-            # Check for tool calls (only if MCP tools are available)
-            if self.tools:
-                tool_calls = self._extract_tool_calls(response)
-                if tool_calls:
-                    yield "\n\n*Executing tools...*\n\n"
-                    for tool_call in tool_calls:
-                        result = await self.call_mcp_tool(tool_call['name'], tool_call['arguments'])
-                        yield f"**{tool_call['name']}**: {json.dumps(result, indent=2)}\n\n"
-                    
+                    outputs = self.model.generate(inputs, attention_mask=attention_mask, max_new_tokens=256, temperature=0.7, do_sample=True, pad_token_id=self.tokenizer.eos_token_id, eos_token_id=self.tokenizer.eos_token_id)
+                    text = self.tokenizer.decode(outputs[0][inputs.shape[1]:], skip_special_tokens=True)
+            text = (text or "I'm here to help! What would you like to know?").strip()
+            yield text
         except Exception as e:
             yield f"Error generating response: {e}"
     
-    async def generate_response(self, messages: List[Dict[str, str]]) -> AsyncGenerator[str, None]:
-        """Generate response using the configured LLM provider."""
-        if self.provider == "ollama":
-            async for chunk in self.generate_response_ollama(messages):
-                yield chunk
-        elif self.provider == "transformers":
-            async for chunk in self.generate_response_transformers(messages):
-                yield chunk
-        else:
-            yield f"Unsupported provider: {self.provider}"
-    
+    # Chat-only client: no MCP metadata
     def get_available_tools(self) -> List[Dict[str, Any]]:
-        """Get list of available MCP tools."""
-        return self.tools
-    
+        return []
     def get_available_resources(self) -> List[Dict[str, Any]]:
-        """Get list of available MCP resources."""
-        return self.resources
-    
+        return []
     def get_available_prompts(self) -> List[Dict[str, Any]]:
-        """Get list of available MCP prompts."""
-        return self.prompts
+        return []
