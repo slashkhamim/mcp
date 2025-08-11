@@ -81,6 +81,7 @@ class LocalLLMClient:
     
     async def generate_response(self, messages: List[Dict[str, str]]) -> AsyncGenerator[str, None]:
         """Dispatch chat generation to the selected provider."""
+        print(f"generate_response provider: {self.provider}")
         if self.provider == "openai":
             async for chunk in self.generate_response_openai(messages):
                 yield chunk
@@ -400,6 +401,9 @@ For example:
             yield "OpenAI client is not installed. Run: pip install openai"
             return
 
+        tools = await self._async_get_mcp_tools()
+        print(f"tools: {tools}")
+    
         # Construct a simple system prompt
         system_prompt = "You are a helpful AI assistant. Be concise and friendly."
         chat_messages: List[Dict[str, Any]] = [{"role": "system", "content": system_prompt}]
@@ -410,6 +414,8 @@ For example:
                 model=self.model_name,
                 messages=chat_messages,
                 temperature=0.7,
+                tools=tools,
+                tool_choice="auto",
             )
             choice = resp.choices[0]
             msg = choice.message

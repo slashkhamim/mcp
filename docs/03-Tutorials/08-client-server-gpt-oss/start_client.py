@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 import json
 
 from libs.local_llm_client import LocalLLMClient
+from libs.mcp_client import MCPClient
 
 # Load environment variables
 load_dotenv()
@@ -40,8 +41,15 @@ def initialize_llm_client():
         st.error(f"Failed to initialize LLM client: {e}")
         return None
 
+def initialize_mcp_client():
+    try:
+        client = MCPClient()
+        client.connect_to_server()
+        return client
+    except Exception as e:
+        st.error(f"Failed to initialize MCP client: {e}")
+        return None
  
-
 def display_sidebar():
     """Display sidebar with configuration and actions."""
     with st.sidebar:
@@ -91,6 +99,7 @@ def main():
     if st.session_state.llm_client is None:
         with st.spinner("Initializing LLM client..."):
             st.session_state.llm_client = initialize_llm_client()
+            st.session_state.mcp_client = initialize_mcp_client()
     
     # Display sidebar
     display_sidebar()
