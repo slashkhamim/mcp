@@ -66,7 +66,7 @@ This tutorial is **different** from the others because:
    **Option A: Using Ollama (Recommended)**
    ```bash
    # Install Ollama
-   curl -fsSL https://ollama.ai/install.sh | sh
+   brew install ollama
    
    # Pull SmolLM (lightweight and fast)
    ollama pull smollm:135m
