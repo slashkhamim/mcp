@@ -105,8 +105,8 @@ class LocalLLMClient:
     
     def initialize_mcp_client(self):
         try:
+            # Instantiate without connecting; HTTP JSON-RPC will be used for tools
             client = MCPClient()
-            client.connect_to_server()
             return client
         except Exception as e:
             st.error(f"Failed to initialize MCP client: {e}")
@@ -419,8 +419,16 @@ For example:
             yield "OpenAI client is not installed. Run: pip install openai"
             return
         print(f"self.generate_response_openai: ")
-        # tools = await self.mcp_client._async_get_mcp_tools()
-        # print(f"tools: {tools}")
+        # Try to fetch MCP tools (optional). Guard against connection issues.
+        tools: List[Dict[str, Any]] = []
+        try:
+            if getattr(self, "mcp_client", None) is not None:
+                tools = await self.mcp_client._async_get_mcp_tools()
+                print(f"Fetched {len(tools)} MCP tools")
+            else:
+                print("MCP client not initialized; proceeding without tools")
+        except Exception as e:
+            print(f"Warning: failed to fetch MCP tools: {e}. Proceeding without tools.")
     
         # Construct a simple system prompt
         system_prompt = "You are a helpful AI assistant. Be concise and friendly."
@@ -432,8 +440,9 @@ For example:
                 model=self.model_name,
                 messages=chat_messages,
                 temperature=0.7,
-                # tools=tools,
-                # tool_choice="auto",
+                # Only pass tools if available (some backends may not support it)
+                tools=tools if tools else None,
+                tool_choice="auto" if tools else None,
             )
             choice = resp.choices[0]
             msg = choice.message
