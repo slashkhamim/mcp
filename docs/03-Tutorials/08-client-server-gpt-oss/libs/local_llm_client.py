@@ -4,7 +4,9 @@ Supports OpenAI-compatible (AsyncOpenAI), Ollama, and Transformers backends.
 """
 import asyncio
 import os
+import streamlit as st
 from typing import Dict, List, Any, AsyncGenerator
+from libs.mcp_client import MCPClient
 
 # Optional imports for different LLM providers
 try:
@@ -27,17 +29,24 @@ try:
 except ImportError:
     TRANSFORMERS_AVAILABLE = False
 
+
+
+
 class LocalLLMClient:
     def __init__(self, provider: str = "openai", model_name: str = "gpt-4o-mini"):
         self.provider = provider.lower()
         self.model_name = model_name
-        
+        print(f"provider: {self.provider}")
+        print(f"OPENAI_AVAILABLE: {OPENAI_AVAILABLE}")
+        self.mcp_client = self.initialize_mcp_client()
         # Initialize LLM based on provider
         if self.provider == "openai" and OPENAI_AVAILABLE:
             # Allow custom base_url for local OpenAI-compatible servers
             base_url = os.getenv("OPENAI_BASE_URL")
             api_key = os.getenv("OPENAI_API_KEY", "")
             # AsyncOpenAI requires an API key even for some local proxies; provide dummy if not set
+            print(f"base_url: {base_url}")
+            print(f"api_key: {api_key}")
             if not api_key:
                 api_key = "not-set"
             self.client = AsyncOpenAI(base_url=base_url, api_key=api_key) if base_url else AsyncOpenAI(api_key=api_key)
@@ -93,6 +102,15 @@ class LocalLLMClient:
                 yield chunk
         else:
             yield f"Unsupported provider: {self.provider}"
+    
+    def initialize_mcp_client(self):
+        try:
+            client = MCPClient()
+            client.connect_to_server()
+            return client
+        except Exception as e:
+            st.error(f"Failed to initialize MCP client: {e}")
+            return None
     
     async def connect_to_mcp_server(self):
         """Connect to FastMCP server via SSE stream and discover capabilities."""
@@ -400,9 +418,9 @@ For example:
         if not OPENAI_AVAILABLE:
             yield "OpenAI client is not installed. Run: pip install openai"
             return
-
-        tools = await self._async_get_mcp_tools()
-        print(f"tools: {tools}")
+        print(f"self.generate_response_openai: ")
+        # tools = await self.mcp_client._async_get_mcp_tools()
+        # print(f"tools: {tools}")
     
         # Construct a simple system prompt
         system_prompt = "You are a helpful AI assistant. Be concise and friendly."
@@ -414,8 +432,8 @@ For example:
                 model=self.model_name,
                 messages=chat_messages,
                 temperature=0.7,
-                tools=tools,
-                tool_choice="auto",
+                # tools=tools,
+                # tool_choice="auto",
             )
             choice = resp.choices[0]
             msg = choice.message

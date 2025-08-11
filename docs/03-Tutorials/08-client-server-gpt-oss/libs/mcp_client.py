@@ -35,6 +35,7 @@ class MCPClient:
         if not self.session:
             raise RuntimeError("Not connected to MCP server")
         tools_result = await self.session.list_tools()
+        print(f"tools_result: {tools_result}")
         return [
             {
                 "type": "function",
