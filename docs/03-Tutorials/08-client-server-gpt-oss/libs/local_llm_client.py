@@ -4,6 +4,8 @@ Supports OpenAI-compatible (AsyncOpenAI), Ollama, and Transformers backends.
 """
 import asyncio
 import os
+import json
+from termios import tcdrain
 import streamlit as st
 from typing import Dict, List, Any, AsyncGenerator
 from libs.mcp_client import MCPClient
@@ -446,8 +448,53 @@ For example:
             )
             choice = resp.choices[0]
             msg = choice.message
-            if msg.content:
+            
+            # Get tool calls from the message, not finish_reason
+            tool_calls = getattr(msg, "tool_calls", None)
+
+            # Case A: No tool calls -> just return assistant text
+            if not tool_calls:
                 yield msg.content
+
+            # Case B: Tool calls -> execute each, append tool outputs, then ask model to finalize
+            new_messages = messages + [dict(role="assistant", content=msg.content or "", tool_calls=[tc.dict() for tc in tool_calls])]
+
+            for tc in tool_calls:
+                if tc.type != "function":
+                    continue
+                try:
+                    # Use the correct method name from MCPClient
+                    result = await self.mcp_client.call_mcp_tool(
+                        tc.function.name,
+                        json.loads(tc.function.arguments or "{}")
+                    )
+                    # The result is already a string from call_mcp_tool
+                    content = result if isinstance(result, str) else str(result)
+
+                    new_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "name": tc.function.name,
+                        "content": content,
+                    })
+                except Exception as e:
+                    new_messages.append({
+                        "role": "tool",
+                        "tool_call_id": tc.id,
+                        "name": tc.function.name,
+                        "content": f"Error: {str(e)}",
+                    })
+
+            # Ask the model to produce the final answer given tool results
+            follow = await self.client.chat.completions.create(
+                model=self.model_name,
+                messages=new_messages,
+                temperature=0.7,
+            )
+            final_msg = follow.choices[0].message
+
+            if final_msg.content:
+                yield final_msg.content
         except Exception as e:
             yield f"Error from OpenAI client: {e}"
 
