@@ -138,14 +138,15 @@ def main():
     col1, col2, col3 = st.columns(3)
     
     with col1:
-        if st.button("💬 Create task"):
-            example_prompt = "Create a high priority task to review the quarterly report with a due date of next Friday"
+         if st.button("💡 List tasks"):
+            example_prompt = "List all my pending tasks, grouped by priority level"
             st.session_state.messages.append({"role": "user", "content": example_prompt})
             st.rerun()
+       
     
     with col2:
-        if st.button("💡 List tasks"):
-            example_prompt = "List all my pending tasks, grouped by priority level"
+        if st.button("💬 Create task"):
+            example_prompt = "Create a high priority task to review the quarterly report with a due date of next Friday"
             st.session_state.messages.append({"role": "user", "content": example_prompt})
             st.rerun()
     
