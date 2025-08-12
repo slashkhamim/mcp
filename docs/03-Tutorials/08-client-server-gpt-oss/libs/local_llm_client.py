@@ -438,6 +438,7 @@ For example:
         for m in messages:
             chat_messages.append({"role": m["role"], "content": m["content"]})
         try:
+            # First, make a non-streaming call to check for tool calls
             resp = await self.client.chat.completions.create(
                 model=self.model_name,
                 messages=chat_messages,
@@ -452,12 +453,20 @@ For example:
             # Get tool calls from the message, not finish_reason
             tool_calls = getattr(msg, "tool_calls", None)
 
-            # Case A: No tool calls -> just return assistant text
+            # Case A: No tool calls -> stream the response in real-time
             if not tool_calls:
-                if msg.content:
-                    yield msg.content
-                else:
-                    yield "I'm here to help! How can I assist you today?"
+                # Make a streaming call for real-time response
+                stream_resp = await self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=chat_messages,
+                    temperature=0.7,
+                    stream=True,  # Enable streaming for real-time response
+                )
+                
+                # Stream each chunk as it arrives
+                async for chunk in stream_resp:
+                    if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                        yield chunk.choices[0].delta.content
                 return  # Important: exit here so we don't continue to tool execution
 
             # Case B: Tool calls -> execute each, append tool outputs, then ask model to finalize
