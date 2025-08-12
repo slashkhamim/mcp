@@ -454,7 +454,11 @@ For example:
 
             # Case A: No tool calls -> just return assistant text
             if not tool_calls:
-                yield msg.content
+                if msg.content:
+                    yield msg.content
+                else:
+                    yield "I'm here to help! How can I assist you today?"
+                return  # Important: exit here so we don't continue to tool execution
 
             # Case B: Tool calls -> execute each, append tool outputs, then ask model to finalize
             new_messages = messages + [dict(role="assistant", content=msg.content or "", tool_calls=[tc.dict() for tc in tool_calls])]
