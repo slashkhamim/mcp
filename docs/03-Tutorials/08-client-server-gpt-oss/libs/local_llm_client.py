@@ -511,16 +511,18 @@ For example:
             # Show that we're generating the final response
             yield "🤖 **Generating response with tool results...**\n\n"
 
-            # Ask the model to produce the final answer given tool results
-            follow = await self.client.chat.completions.create(
+            # Ask the model to produce the final answer given tool results (with streaming)
+            follow_stream = await self.client.chat.completions.create(
                 model=self.model_name,
                 messages=new_messages,
                 temperature=0.7,
+                stream=True,  # Enable streaming for real-time response
             )
-            final_msg = follow.choices[0].message
-
-            if final_msg.content:
-                yield final_msg.content
+            
+            # Stream the final response in real-time
+            async for chunk in follow_stream:
+                if chunk.choices and chunk.choices[0].delta and chunk.choices[0].delta.content:
+                    yield chunk.choices[0].delta.content
         except Exception as e:
             yield f"Error from OpenAI client: {e}"
 

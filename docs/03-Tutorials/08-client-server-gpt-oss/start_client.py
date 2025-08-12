@@ -111,14 +111,23 @@ def main():
         with st.chat_message("user"):
             st.markdown(prompt)
         
-        # Generate and display assistant response
+        # Generate and display assistant response with real-time streaming
         with st.chat_message("assistant"):
-            with st.spinner("Thinking..."):
-                response = asyncio.run(generate_response(st.session_state.messages))
-            
-            # Render the response as Markdown to preserve newlines and code blocks
             message_placeholder = st.empty()
-            message_placeholder.markdown(response)
+            response_text = ""
+            
+            # Stream the response in real-time
+            async def stream_response():
+                nonlocal response_text
+                async for chunk in st.session_state.llm_client.generate_response(st.session_state.messages):
+                    response_text += chunk
+                    # Update the display in real-time with each chunk
+                    message_placeholder.markdown(response_text + "▌")  # Add cursor for typing effect
+                # Remove cursor when complete
+                message_placeholder.markdown(response_text)
+                return response_text
+            
+            response = asyncio.run(stream_response())
         
         # Add assistant response to session state
         st.session_state.messages.append({"role": "assistant", "content": response})
