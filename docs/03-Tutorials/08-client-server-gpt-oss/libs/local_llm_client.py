@@ -459,10 +459,24 @@ For example:
             # Case B: Tool calls -> execute each, append tool outputs, then ask model to finalize
             new_messages = messages + [dict(role="assistant", content=msg.content or "", tool_calls=[tc.dict() for tc in tool_calls])]
 
+            # Show user that tools are being executed
+            tool_names = [tc.function.name for tc in tool_calls if tc.type == "function"]
+            if len(tool_names) == 1:
+                yield f"🔧 **Calling MCP tool:** `{tool_names[0]}`\n\n"
+            else:
+                yield f"🔧 **Calling {len(tool_names)} MCP tools:** {', '.join(f'`{name}`' for name in tool_names)}\n\n"
+
             for tc in tool_calls:
                 if tc.type != "function":
                     continue
                 try:
+                    # Show which specific tool is being called
+                    args_preview = json.loads(tc.function.arguments or "{}")
+                    args_str = ", ".join(f"{k}={v}" for k, v in list(args_preview.items())[:2])  # Show first 2 args
+                    if len(args_preview) > 2:
+                        args_str += "..."
+                    yield f"⚡ Executing `{tc.function.name}({args_str})`...\n\n"
+                    
                     # Use the correct method name from MCPClient
                     result = await self.mcp_client.call_mcp_tool(
                         tc.function.name,
@@ -470,6 +484,10 @@ For example:
                     )
                     # The result is already a string from call_mcp_tool
                     content = result if isinstance(result, str) else str(result)
+                    
+                    # Show tool result preview
+                    result_preview = content[:100] + "..." if len(content) > 100 else content
+                    yield f"✅ `{tc.function.name}` completed: {result_preview}\n\n"
 
                     new_messages.append({
                         "role": "tool",
@@ -478,12 +496,16 @@ For example:
                         "content": content,
                     })
                 except Exception as e:
+                    yield f"❌ `{tc.function.name}` failed: {str(e)}\n\n"
                     new_messages.append({
                         "role": "tool",
                         "tool_call_id": tc.id,
                         "name": tc.function.name,
                         "content": f"Error: {str(e)}",
                     })
+            
+            # Show that we're generating the final response
+            yield "🤖 **Generating response with tool results...**\n\n"
 
             # Ask the model to produce the final answer given tool results
             follow = await self.client.chat.completions.create(
