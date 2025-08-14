@@ -69,7 +69,7 @@ This tutorial is **different** from the others because:
    brew install ollama
    
    # Pull SmolLM (lightweight and fast)
-   ollama pull smollm:135m
+   ollama pull gpt-oss:20b
    ```
    
    **Option B: Using Transformers**
@@ -84,17 +84,12 @@ This tutorial is **different** from the others because:
    # Edit .env to set your preferred model
    ```
 
-4. **Start the MCP server**:
-   ```bash
-   uv run python storage_mcp_server.py
-   ```
-
-5. **Start the Streamlit client** (in another terminal):
+4. **Start the Streamlit client** (in another terminal):
    ```bash
    uv run streamlit run start_client.py
    ```
 
-6. **Open your browser** to `http://localhost:8501`
+5. **Open your browser** to `http://localhost:8501`
 
 ## How It Works
 
@@ -138,35 +133,7 @@ cd 08-client-server-gpt-oss
 mkdir libs
 ```
 
-### Step 2: Configure Dependencies
-
-Create `pyproject.toml`:
-
-```toml
-[project]
-name = "mcp-gpt-oss-tutorial"
-version = "0.1.0"
-description = "MCP Tutorial with Local GPT-OSS Integration"
-dependencies = [
-    "mcp>=1.0.0",
-    "streamlit>=1.28.0",
-    "ollama>=0.1.0",
-    "transformers>=4.35.0",
-    "torch>=2.0.0",
-    "sqlite3",
-    "asyncio",
-    "httpx",
-    "sse-starlette",
-    "uvicorn",
-    "fastapi",
-]
-
-[build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-```
-
-### Step 3: Environment Configuration
+### Step 2: Environment Configuration
 
 Create `.env.example`:
 
@@ -188,15 +155,11 @@ SERVER_PORT=8000
 DATABASE_PATH=./tasks.db
 ```
 
-### Step 4: Build the MCP Server
-
-The MCP server handles task management with tools, resources, and prompts.
-
-### Step 5: Create the Local LLM Client
+### Step 3: Create the Local LLM Client
 
 The client integrates with local models and provides the Streamlit interface.
 
-### Step 6: Implement Supporting Libraries
+### Step 4: Implement Supporting Libraries
 
 Create the task management, storage, and LLM integration libraries.
 
@@ -204,8 +167,8 @@ Create the task management, storage, and LLM integration libraries.
 
 ### Ollama (Recommended)
 - **Pros**: Easy setup, good performance, model management
-- **Models**: SmolLM, Llama 2, Code Llama, Mistral, Phi-3
-- **Setup**: `ollama pull smollm:135m` (recommended for this tutorial)
+- **Models**: gpt-oss:20b, SmolLM, Llama 2, Code Llama, Mistral, Phi-3
+- **Setup**: `ollama pull gpt-oss:20b` (recommended for this tutorial)
 
 ### Transformers (Hugging Face)
 - **Pros**: Wide model selection, direct Python integration
