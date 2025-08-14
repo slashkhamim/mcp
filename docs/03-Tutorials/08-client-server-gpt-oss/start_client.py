@@ -164,7 +164,7 @@ def main():
                     
                     # Update the display in real-time with each chunk (less frequent timer updates)
                     # Only show timer every few chunks to reduce blinking
-                    if len(response_text) % 50 == 0 or first_chunk:  # Update timer less frequently
+                    if len(response_text) % 50 == 0 or first_chunk:
                         content_with_timer = f"{response_text}▌\n\n*⏱️ Elapsed: {elapsed_time:.1f}s*"
                         rendered_content = render_math_content(content_with_timer)
                         message_placeholder.markdown(rendered_content, unsafe_allow_html=True)
@@ -178,11 +178,13 @@ def main():
                 end_time = time.time()
                 response_time = end_time - start_time
                 
-                # Remove cursor and show final timing info
-                final_content = f"{response_text}\n\n---\n*⏱️ Response completed in {response_time:.2f} seconds*"
-                rendered_final = render_math_content(final_content)
+                # Create final content with permanent timing info
+                final_content_with_timing = f"{response_text}\n\n---\n*⏱️ Response completed in {response_time:.2f} seconds*"
+                rendered_final = render_math_content(final_content_with_timing)
                 message_placeholder.markdown(rendered_final, unsafe_allow_html=True)
-                return response_text
+                
+                # Return both the response text and the final content with timing
+                return response_text, final_content_with_timing
             
             # Show initial thinking message with timer
             async def show_thinking_with_timer():
@@ -197,8 +199,8 @@ def main():
             async def run_with_thinking_timer():
                 thinking_task = asyncio.create_task(show_thinking_with_timer())
                 try:
-                    response = await stream_response()
-                    return response
+                    response_data = await stream_response()
+                    return response_data
                 finally:
                     thinking_task.cancel()
                     try:
@@ -206,10 +208,11 @@ def main():
                     except asyncio.CancelledError:
                         pass
             
-            response = asyncio.run(run_with_thinking_timer())
+            response_data = asyncio.run(run_with_thinking_timer())
+            response_text, final_content_with_timing = response_data
         
-        # Add assistant response to session state
-        st.session_state.messages.append({"role": "assistant", "content": response})
+        # Add assistant response to session state with timing information
+        st.session_state.messages.append({"role": "assistant", "content": final_content_with_timing})
 
     # Example prompts
     st.subheader("💡 Try these examples:")
