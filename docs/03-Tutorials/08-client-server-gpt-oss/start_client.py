@@ -142,73 +142,69 @@ def main():
         
         # Generate and display assistant response with real-time streaming
         with st.chat_message("assistant"):
-            message_placeholder = st.empty()
+            # Create separate containers for content and timer
+            content_container = st.empty()
+            timer_container = st.empty()
             response_text = ""
             
             # Start timing the response
             start_time = time.time()
             
+            # Show initial thinking message
+            content_container.markdown("🤔 *Thinking...*")
+            
             # Stream the response in real-time
             async def stream_response():
                 nonlocal response_text
                 first_chunk = True
-                async for chunk in st.session_state.llm_client.generate_response(st.session_state.messages):
-                    current_time = time.time()
-                    elapsed_time = current_time - start_time
-                    
-                    if first_chunk:
-                        # Clear the thinking message when first chunk arrives
-                        first_chunk = False
-                    
-                    response_text += chunk
-                    
-                    # Update the display in real-time with each chunk (less frequent timer updates)
-                    # Only show timer every few chunks to reduce blinking
-                    if len(response_text) % 50 == 0 or first_chunk:
-                        content_with_timer = f"{response_text}▌\n\n*⏱️ Elapsed: {elapsed_time:.1f}s*"
-                        rendered_content = render_math_content(content_with_timer)
-                        message_placeholder.markdown(rendered_content, unsafe_allow_html=True)
-                    else:
-                        # Just update content without timer to reduce blinking
-                        content_only = f"{response_text}▌"
-                        rendered_content = render_math_content(content_only)
-                        message_placeholder.markdown(rendered_content, unsafe_allow_html=True)
                 
-                # Calculate final response time
-                end_time = time.time()
-                response_time = end_time - start_time
+                # Start timer display
+                async def update_timer():
+                    while True:
+                        current_time = time.time()
+                        elapsed_time = current_time - start_time
+                        timer_container.markdown(f"*⏱️ {elapsed_time:.1f}s*")
+                        await asyncio.sleep(0.5)  # Update timer every 500ms
                 
-                # Create final content with permanent timing info
-                final_content_with_timing = f"{response_text}\n\n---\n*⏱️ Response completed in {response_time:.2f} seconds*"
-                rendered_final = render_math_content(final_content_with_timing)
-                message_placeholder.markdown(rendered_final, unsafe_allow_html=True)
+                timer_task = asyncio.create_task(update_timer())
                 
-                # Return both the response text and the final content with timing
-                return response_text, final_content_with_timing
-            
-            # Show initial thinking message with timer
-            async def show_thinking_with_timer():
-                thinking_start = time.time()
-                while True:
-                    current_time = time.time()
-                    elapsed = current_time - thinking_start
-                    message_placeholder.markdown(f"🤔 *Thinking... ({elapsed:.0f}s)*", unsafe_allow_html=True)
-                    await asyncio.sleep(1.0)  # Update every 1 second
-            
-            # Start thinking timer and response generation concurrently
-            async def run_with_thinking_timer():
-                thinking_task = asyncio.create_task(show_thinking_with_timer())
                 try:
-                    response_data = await stream_response()
-                    return response_data
-                finally:
-                    thinking_task.cancel()
-                    try:
-                        await thinking_task
-                    except asyncio.CancelledError:
-                        pass
+                    async for chunk in st.session_state.llm_client.generate_response(st.session_state.messages):
+                        if first_chunk:
+                            # Clear the thinking message when first chunk arrives
+                            first_chunk = False
+                        
+                        response_text += chunk
+                        
+                        # Update only the content, timer updates separately
+                        content_with_cursor = f"{response_text}▌"
+                        rendered_content = render_math_content(content_with_cursor)
+                        content_container.markdown(rendered_content, unsafe_allow_html=True)
+                    
+                    # Stop the timer
+                    timer_task.cancel()
+                    
+                    # Calculate final response time
+                    end_time = time.time()
+                    response_time = end_time - start_time
+                    
+                    # Show final content without cursor
+                    final_content = render_math_content(response_text)
+                    content_container.markdown(final_content, unsafe_allow_html=True)
+                    
+                    # Show final timing info in timer container
+                    timer_container.markdown(f"*⏱️ Response completed in {response_time:.2f} seconds*")
+                    
+                    # Create final content with timing for storage
+                    final_content_with_timing = f"{response_text}\n\n---\n*⏱️ Response completed in {response_time:.2f} seconds*"
+                    
+                    return response_text, final_content_with_timing
+                    
+                except asyncio.CancelledError:
+                    timer_task.cancel()
+                    raise
             
-            response_data = asyncio.run(run_with_thinking_timer())
+            response_data = asyncio.run(stream_response())
             response_text, final_content_with_timing = response_data
         
         # Add assistant response to session state with timing information
