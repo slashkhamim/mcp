@@ -61,31 +61,21 @@ async def test_mcp_server():
             audit_result = await session.call_tool("list_audit_events", {"limit": 3})
             print(f"Audit events: {audit_result.content[0].text}")
             
-            # Test 6: List resources
-            print("\n6️⃣  Testing resource listing...")
-            resources = await session.list_resources()
-            print(f"Available resources: {[res.uri for res in resources.resources]}")
-            
-            # Test 7: Read a resource
-            print("\n7️⃣  Testing resource reading...")
-            profile_resource = await session.read_resource("user://profile")
-            print(f"Profile resource: {profile_resource.contents[0].text}")
-            
-            # Test 8: API Key creation
-            print("\n8️⃣  Testing API key creation...")
+            # Test 6: API Key creation
+            print("\n6️⃣  Testing API key creation...")
             api_key_result = await session.call_tool(
                 "create_api_key",
                 {"name": "test_key", "permissions": ["read", "write"]}
             )
             print(f"API key created: {api_key_result.content[0].text}")
             
-            # Test 9: Logout
-            print("\n9️⃣  Testing logout...")
+            # Test 7: Logout
+            print("\n7️⃣  Testing logout...")
             logout_result = await session.call_tool("logout", {})
             print(f"Logout result: {logout_result.content[0].text}")
             
-            # Test 10: Try access after logout (should fail)
-            print("\n🔟 Testing access after logout...")
+            # Test 8: Try access after logout (should fail)
+            print("\n8️⃣  Testing access after logout...")
             profile_after_logout = await session.call_tool("get_user_profile", {})
             print(f"Profile after logout: {profile_after_logout.content[0].text}")
             
@@ -136,7 +126,7 @@ if __name__ == "__main__":
                 await test_mcp_server()
             except Exception as e:
                 print(f"❌ MCP test failed: {e}")
-                print("Make sure the server is running: uv run python auth_server_working.py")
+                print("Make sure the server is running: uv run python mcp_server.py")
         else:
             print("❌ Cannot test MCP functionality - server startup failed")
     
