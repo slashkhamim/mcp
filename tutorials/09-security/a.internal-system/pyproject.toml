@@ -27,24 +27,22 @@ dependencies = [
     "fastapi>=0.104.0",
     "uvicorn[standard]>=0.24.0",
     "pydantic>=2.0.0",
-    
     # Authentication and JWT
     "PyJWT>=2.8.0",
     "cryptography>=41.0.0",
     "requests>=2.31.0",
-    
     # Database support
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.0",
     "pymongo>=4.5.0",
-    
     # Configuration and utilities
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0.1",
-    
     # Security and monitoring
     "bcrypt>=4.0.0",
     "python-multipart>=0.0.6",
+    "rich>=14.1.0",
+    "httpx>=0.28.1",
 ]
 
 [project.optional-dependencies]
