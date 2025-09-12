@@ -1,0 +1,148 @@
+# Role-based access control mappings for internal systems
+# Maps IdP groups to internal roles and defines role permissions
+
+roles:
+  # Administrative roles
+  admin:
+    scopes: ["*"]
+    description: "Full administrative access to all systems"
+    
+  # HR roles
+  hr_admin:
+    scopes: 
+      - "db:read:employee"
+      - "db:write:employee"
+      - "api:hr:*"
+      - "admin:hr"
+    description: "HR administrative access - can read/write employee data"
+    
+  hr_user:
+    scopes:
+      - "db:read:employee"
+      - "api:hr:read"
+    description: "HR user access - can read employee data (no salary info)"
+    
+  # Finance roles
+  finance_admin:
+    scopes:
+      - "db:read:financial"
+      - "db:write:financial"
+      - "api:finance:*"
+      - "admin:finance"
+    description: "Finance administrative access - can read/write financial data"
+    
+  finance_user:
+    scopes:
+      - "db:read:financial"
+      - "api:finance:read"
+    description: "Finance user access - can read financial data"
+    
+  # IT roles
+  it_admin:
+    scopes:
+      - "db:read:system"
+      - "db:write:system"
+      - "api:system:*"
+      - "admin:system"
+      - "admin:sessions"
+    description: "IT administrative access - can manage system resources"
+    
+  it_user:
+    scopes:
+      - "db:read:system"
+      - "api:system:read"
+    description: "IT user access - can read system logs and data"
+    
+  # Employee roles
+  employee:
+    scopes:
+      - "db:read:public"
+      - "api:employee:read"
+    description: "Standard employee access - can read public information"
+    
+  contractor:
+    scopes:
+      - "db:read:public"
+    description: "Contractor access - limited to public information only"
+    
+  # Default roles
+  readonly:
+    scopes:
+      - "db:read:public"
+    description: "Read-only access to public information"
+
+# Group mappings - map IdP groups to internal roles
+group_mappings:
+  # Okta group examples
+  "Administrators": "admin"
+  "HR-Admins": "hr_admin"
+  "HR-Users": "hr_user"
+  "Finance-Admins": "finance_admin"
+  "Finance-Users": "finance_user"
+  "IT-Admins": "it_admin"
+  "IT-Users": "it_user"
+  "Employees": "employee"
+  "Contractors": "contractor"
+  "Everyone": "readonly"
+  
+  # Azure AD group examples (using ObjectId or DisplayName)
+  "12345678-1234-1234-1234-123456789012": "admin"  # Admin group ObjectId
+  "HR Administrators": "hr_admin"
+  "HR Users": "hr_user"
+  "Finance Team": "finance_user"
+  "IT Support": "it_user"
+  
+  # Google Workspace group examples
+  "admins@company.com": "admin"
+  "hr@company.com": "hr_user"
+  "finance@company.com": "finance_user"
+  "it@company.com": "it_user"
+  "employees@company.com": "employee"
+  
+  # Keycloak group examples
+  "/admin": "admin"
+  "/hr/admin": "hr_admin"
+  "/hr/user": "hr_user"
+  "/finance/admin": "finance_admin"
+  "/finance/user": "finance_user"
+  "/it/admin": "it_admin"
+  "/it/user": "it_user"
+  "/employee": "employee"
+
+# Scope definitions and descriptions
+scope_definitions:
+  # Database scopes
+  "db:read:employee": "Read access to employee database"
+  "db:write:employee": "Write access to employee database"
+  "db:read:financial": "Read access to financial records"
+  "db:write:financial": "Write access to financial records"
+  "db:read:system": "Read access to system logs and data"
+  "db:write:system": "Write access to system configuration"
+  "db:read:public": "Read access to public information"
+  
+  # API scopes
+  "api:hr:read": "Read access to HR APIs"
+  "api:hr:*": "Full access to HR APIs"
+  "api:finance:read": "Read access to Finance APIs"
+  "api:finance:*": "Full access to Finance APIs"
+  "api:system:read": "Read access to System APIs"
+  "api:system:*": "Full access to System APIs"
+  "api:employee:read": "Read access to Employee self-service APIs"
+  
+  # Administrative scopes
+  "admin:hr": "HR administrative functions"
+  "admin:finance": "Finance administrative functions"
+  "admin:system": "System administrative functions"
+  "admin:sessions": "Session management functions"
+  "*": "Full administrative access to all resources"
+
+# Default role assignment rules
+default_rules:
+  # If no groups match, assign this role
+  fallback_role: "readonly"
+  
+  # Require at least one of these groups for any access
+  required_groups: []
+  
+  # Automatically grant these roles to all authenticated users
+  base_roles: ["readonly"]
