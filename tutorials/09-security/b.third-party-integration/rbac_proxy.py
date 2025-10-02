@@ -9,6 +9,7 @@ import asyncio
 from typing import Dict, Any, Optional
 from urllib.parse import parse_qs, urlparse
 import logging
+import time
 from datetime import datetime
 from contextlib import asynccontextmanager
 
@@ -63,8 +64,8 @@ async def lifespan(app: FastAPI):
 
 # Initialize FastAPI app with lifespan
 app = FastAPI(
-    title="Internal System RBAC Proxy",
-    description="Authentication proxy for internal MCP systems",
+    title="Third-Party Integration RBAC Proxy",
+    description="Authentication proxy for third-party integration",
     version="1.0.0",
     lifespan=lifespan
 )
@@ -80,6 +81,7 @@ app.add_middleware(
 
 # Security
 security = HTTPBearer()
+
 
 def load_config() -> Dict[str, Any]:
     """Load configuration from environment variables."""
@@ -104,21 +106,24 @@ def load_config() -> Dict[str, Any]:
         # JWT Configuration
         'jwt_secret_key': os.getenv('JWT_SECRET_KEY', 'your-super-secret-jwt-key-change-this-in-production'),
         'jwt_algorithm': os.getenv('JWT_ALGORITHM', 'HS256'),
-        'token_expiry_minutes': int(os.getenv('TOKEN_EXPIRY_MINUTES', '15')),
+        'token_expiry_minutes': int(os.getenv('TOKEN_EXPIRY_MINUTES', '60')),
         'issuer': os.getenv('JWT_ISSUER', 'internal-rbac-proxy'),
         'audience': os.getenv('JWT_AUDIENCE', 'internal-mcp-server'),
-        
-        # RBAC Configuration
-        'role_mappings_file': os.getenv('ROLE_MAPPINGS_FILE', 'config/role_mappings.yaml'),
-        
+                
         # Server Configuration
         'host': os.getenv('PROXY_HOST', '0.0.0.0'),
         'port': int(os.getenv('PROXY_PORT', '8080')),
         'debug': os.getenv('DEBUG', 'false').lower() == 'true',
 
         # Client Configuration
-        'client_redirect_uri': os.getenv('CLIENT_REDIRECT_URI', 'http://localhost:8081/auth/callback')
+        'client_redirect_uri': os.getenv('CLIENT_REDIRECT_URI', 'http://localhost:8081/auth/callback'),
+
+        # Google Configuration
+        'google_client_id': os.getenv('GOOGLE_CLIENT_ID', 'your_google_client_id'),
+        'google_client_secret': os.getenv('GOOGLE_CLIENT_SECRET', 'your_google_client_secret'),
+        'google_oauth_token_uri': os.getenv('GOOGLE_OAUTH_TOKEN_URI', 'https://oauth2.googleapis.com/token'),
     }
+
 
 @app.get("/")
 async def root():
@@ -151,7 +156,7 @@ async def auth_callback(request: Request):
         auth_code = query_params.get('code')
         state = query_params.get('state')
         error = query_params.get('error')
-        
+        logger.info(f"Auth callback: {query_params}")
         if error:
             raise HTTPException(status_code=400, detail=f"OAuth error: {error}")
         
@@ -160,20 +165,29 @@ async def auth_callback(request: Request):
         
         # Complete authentication
         auth_result = idp_authenticator.complete_authentication(auth_code)
-        
+        keycloak_access_token = auth_result['tokens']['access_token']
+        google_tokens = idp_authenticator.get_google_token(keycloak_access_token)
+        refresh_token_expiration = google_tokens['refresh_token_expires_in']
+
+        # Store session (in production, use secure session management)
+        session_id = f"session_{auth_result['user_info']['sub']}_{int(datetime.utcnow().timestamp())}"
+        auth_result['user_info']['session_id'] = session_id
+
         # Process through RBAC
         rbac_result = rbac_proxy.process_authentication(auth_result)
         
         if not rbac_result['success']:
             raise HTTPException(status_code=403, detail=rbac_result['error'])
         
-        # Store session (in production, use secure session management)
-        session_id = f"session_{auth_result['user_info']['sub']}_{int(datetime.utcnow().timestamp())}"
         active_sessions[session_id] = {
             'user_info': rbac_result['user_info'],
             'jwt_token': rbac_result['jwt_token'],
             'roles': rbac_result['roles'],
             'scopes': rbac_result['scopes'],
+            'google_access_token': google_tokens['access_token'],
+            'google_access_token_expiration': google_tokens['accessTokenExpiration'],
+            'google_refresh_token': google_tokens['refresh_token'],
+            'google_refresh_token_expiration': int(time.time() + refresh_token_expiration),
             'created_at': datetime.utcnow().isoformat()
         }
         
@@ -215,6 +229,49 @@ async def get_jwks():
     except Exception as e:
         logger.error(f"JWKS retrieval failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/token/google")
+async def get_google_access_token(request: Request):
+    """Validate and decode Google token."""
+    auth_header = request.headers.get("Authorization")
+    
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Authorization header missing")
+    
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise HTTPException(status_code=401, detail="Invalid Authorization header format. Expected 'Bearer <token>'")
+    
+    token = parts[1]
+    try:
+        user_info = rbac_proxy.validate_jwt_token(token)
+        session_id = user_info.get('session_id')
+        session_data = active_sessions.get(session_id)
+        if session_data:
+            current_epoch_time = int(time.time())
+            google_access_token = session_data['google_access_token']
+            google_access_token_expiration = session_data['google_access_token_expiration']
+            google_refresh_token = session_data['google_refresh_token']
+            google_refresh_token_expiration = session_data['google_refresh_token_expiration']
+            if current_epoch_time < google_access_token_expiration:
+                return {"access_token": google_access_token, "expiration_time": google_access_token_expiration}
+            else:
+                if current_epoch_time < google_refresh_token_expiration:
+                    # Refresh access token
+                    refresh_response = idp_authenticator.refresh_google_token(google_refresh_token)
+                    new_access_token = refresh_response['access_token']
+                    new_expiration_time = int(time.time() + refresh_response['expires_in'])
+                    active_sessions[session_id]['google_access_token'] = new_access_token
+                    active_sessions[session_id]['google_access_token_expiration'] = new_expiration_time
+                    
+                    return {"access_token": new_access_token, "expiration_time": new_expiration_time}
+                else:
+                    raise HTTPException(status_code=401, detail="Please re-login to acquire new access token")
+        else:
+            raise HTTPException(status_code=401, detail="Session not found")
+    except Exception as e:
+        logger.error(f"Google access token validation failed: {e}")
+        raise HTTPException(status_code=401, detail=str(e))
 
 @app.get("/health")
 async def health_check():

@@ -23,14 +23,12 @@ class RBACManager:
     def __init__(self, config: Dict[str, Any]):
         self.jwt_secret = config.get('jwt_secret_key')
         self.jwt_algorithm = config.get('jwt_algorithm', 'RS256')
-        # Create JWT token with extended expiry for testing
-        expiry_minutes = config.get('token_expiry_minutes', 60)
-        self.token_expiry_minutes = expiry_minutes
-        self.issuer = config.get('issuer', 'internal-rbac-proxy')
-        self.audience = config.get('audience', 'internal-mcp-server')
+        self.token_expiry_minutes = config.get('token_expiry_minutes', 60)
+        self.issuer = config.get('issuer', 'rbac-proxy')
+        self.audience = config.get('audience', 'google-mcp-server')
         
         # Load role mappings
-        self.role_mappings = self._load_role_mappings(config.get('role_mappings_file'))
+        self.role_mappings = self._load_role_mappings()
         
         # Generate RSA key pair for RS256 if needed
         if self.jwt_algorithm.startswith('RS'):
@@ -39,51 +37,25 @@ class RBACManager:
         if not self.jwt_secret:
             raise ValueError("JWT secret key is required")
     
-    def _load_role_mappings(self, mappings_file: Optional[str] = None) -> Dict[str, Any]:
+    def _load_role_mappings(self) -> Dict[str, Any]:
         """Load role mappings from YAML file or use defaults."""
-        default_mappings = {
+        return {
             'roles': {
-                'admin': {
-                    'scopes': ['*'],
-                    'description': 'Full administrative access'
+                'basic': {
+                    'scopes': ['api:google:read'],
+                    'description': 'Basic access'
                 },
-                'hr_admin': {
-                    'scopes': ['db:read:employee', 'db:write:employee', 'api:hr:*'],
-                    'description': 'HR administrative access'
+                'editor': {
+                    'scopes': ['api:google:*'],
+                    'description': 'Editor access'
                 },
-                'finance_admin': {
-                    'scopes': ['db:read:financial', 'db:write:financial', 'api:finance:*'],
-                    'description': 'Finance administrative access'
-                },
-                'readonly': {
-                    'scopes': ['db:read:public'],
-                    'description': 'Read-only access'
-                }
             },
             'group_mappings': {
                 # Map IdP groups to internal roles
-                'Administrators': 'admin',
-                'HR-Admins': 'hr_admin',
-                'HR-Users': 'hr_user',
-                'Finance-Admins': 'finance_admin',
-                'Finance-Users': 'finance_user',
-                'IT-Admins': 'it_admin',
-                'Employees': 'employee',
-                'Contractors': 'contractor',
-                'Everyone': 'readonly'
+                'Basic': 'basic',
+                'Editor': 'editor',
             }
         }
-        
-        if mappings_file and os.path.exists(mappings_file):
-            try:
-                with open(mappings_file, 'r') as f:
-                    loaded_mappings = yaml.safe_load(f)
-                    # Merge with defaults
-                    default_mappings.update(loaded_mappings)
-            except Exception as e:
-                logger.warning(f"Failed to load role mappings from {mappings_file}: {e}")
-        
-        return default_mappings
     
     def _generate_rsa_keys(self):
         """Generate RSA key pair for RS256 JWT signing."""
@@ -184,6 +156,7 @@ class RBACManager:
             'roles': roles,
             'scopes': scopes,
             'groups': user_context.get('groups', []),
+            'session_id': user_context.get('session_id'),
             'auth_time': user_context.get('authenticated_at'),
             'token_type': 'access'
         }
@@ -239,6 +212,32 @@ class RBACManager:
         # In production, this would go to a secure audit log system
         logger.info(f"AUDIT: {json.dumps(audit_entry)}")
 
+    def validate_jwt_token(self, token: str) -> Dict[str, Any]:
+        """Validate and decode JWT token."""
+        try:
+            if self.jwt_algorithm.startswith('RS'):
+                payload = jwt.decode(
+                    token,
+                    self.public_key,
+                    algorithms=[self.jwt_algorithm],
+                    audience=self.audience,
+                    issuer=self.issuer
+                )
+            else:
+                payload = jwt.decode(
+                    token,
+                    self.jwt_secret,
+                    algorithms=[self.jwt_algorithm],
+                    audience=self.audience,
+                    issuer=self.issuer
+                )
+            
+            return payload
+            
+        except jwt.ExpiredSignatureError:
+            raise Exception("Token has expired")
+        except jwt.InvalidTokenError as e:
+            raise Exception(f"Invalid token: {str(e)}")
 
 class RBACProxy:
     """RBAC Proxy service that handles authentication flow."""
@@ -295,6 +294,10 @@ class RBACProxy:
                 'success': False,
                 'error': str(e)
             }
+    
+    def validate_jwt_token(self, token: str) -> Dict[str, Any]:
+        """Validate and decode JWT token."""
+        return self.rbac_manager.validate_jwt_token(token)
     
     def get_jwks(self) -> Dict[str, Any]:
         """Get JWKS for token validation."""

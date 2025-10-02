@@ -10,6 +10,7 @@ roles:
   # HR roles
   hr_admin:
     scopes: 
+      - "db:read:public"
       - "db:read:employee"
       - "db:write:employee"
       - "api:hr:*"
@@ -18,6 +19,7 @@ roles:
     
   hr_user:
     scopes:
+      - "db:read:public"
       - "db:read:employee"
       - "api:hr:read"
     description: "HR user access - can read employee data (no salary info)"
@@ -25,6 +27,7 @@ roles:
   # Finance roles
   finance_admin:
     scopes:
+      - "db:read:public"
       - "db:read:financial"
       - "db:write:financial"
       - "api:finance:*"
@@ -33,6 +36,7 @@ roles:
     
   finance_user:
     scopes:
+      - "db:read:public"
       - "db:read:financial"
       - "api:finance:read"
     description: "Finance user access - can read financial data"
@@ -40,6 +44,7 @@ roles:
   # IT roles
   it_admin:
     scopes:
+      - "db:read:public"
       - "db:read:system"
       - "db:write:system"
       - "api:system:*"
@@ -49,6 +54,7 @@ roles:
     
   it_user:
     scopes:
+      - "db:read:public"
       - "db:read:system"
       - "api:system:read"
     description: "IT user access - can read system logs and data"

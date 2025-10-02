@@ -144,12 +144,19 @@ class DatabaseManager:
     def _insert_sample_data(self):
         """Insert sample data for testing."""
         with self.engine.connect() as conn:
-            # Sample employees data with status
+            # Enable foreign key constraints
+            conn.execute(text("PRAGMA foreign_keys = ON"))
+            
+            # Sample employees data
             employees_data = [
-                ('EMP001', 'John', 'Doe', 'john.doe@company.com', 'Engineering', 'Senior Developer', 95000, '2020-01-15', 'active'),
-                ('EMP002', 'Jane', 'Smith', 'jane.smith@company.com', 'HR', 'HR Manager', 85000, '2019-03-20', 'active'),
-                ('EMP003', 'Bob', 'Johnson', 'bob.johnson@company.com', 'Finance', 'Financial Analyst', 75000, '2021-06-10', 'active'),
-                ('EMP004', 'Alice', 'Wilson', 'alice.wilson@company.com', 'IT', 'System Administrator', 80000, '2020-09-05', 'active')
+                {'employee_id': 'EMP001', 'first_name': 'John', 'last_name': 'Doe', 'email': 'john.doe@company.com', 
+                'department': 'Engineering', 'position': 'Senior Developer', 'salary': 95000, 'hire_date': '2020-01-15', 'status': 'active'},
+                {'employee_id': 'EMP002', 'first_name': 'Jane', 'last_name': 'Smith', 'email': 'jane.smith@company.com', 
+                'department': 'HR', 'position': 'HR Manager', 'salary': 85000, 'hire_date': '2019-03-20', 'status': 'active'},
+                {'employee_id': 'EMP003', 'first_name': 'Bob', 'last_name': 'Johnson', 'email': 'bob.johnson@company.com', 
+                'department': 'Finance', 'position': 'Financial Analyst', 'salary': 75000, 'hire_date': '2021-06-10', 'status': 'active'},
+                {'employee_id': 'EMP004', 'first_name': 'Alice', 'last_name': 'Wilson', 'email': 'alice.wilson@company.com', 
+                'department': 'IT', 'position': 'System Administrator', 'salary': 80000, 'hire_date': '2020-09-05', 'status': 'active'}
             ]
             
             for emp in employees_data:
@@ -157,16 +164,21 @@ class DatabaseManager:
                     conn.execute(text("""
                         INSERT OR IGNORE INTO employees 
                         (employee_id, first_name, last_name, email, department, position, salary, hire_date, status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (:employee_id, :first_name, :last_name, :email, :department, :position, :salary, :hire_date, :status)
                     """), emp)
-                except:
-                    pass  # Ignore duplicates
+                except Exception as e:
+                    print(f"Error inserting employee {emp['employee_id']}: {e}")
+            
+            conn.commit()
             
             # Sample financial records
             financial_data = [
-                ('FIN001', 'EMP001', 'salary', 95000, 'USD', 'Annual salary', 2023, 4),
-                ('FIN002', 'EMP002', 'bonus', 10000, 'USD', 'Performance bonus', 2023, 4),
-                ('FIN003', 'EMP003', 'expense', 2500, 'USD', 'Travel expenses', 2023, 3)
+                {'record_id': 'FIN001', 'employee_id': 'EMP001', 'record_type': 'salary', 'amount': 95000, 
+                'currency': 'USD', 'description': 'Annual salary', 'fiscal_year': 2023, 'quarter': 4},
+                {'record_id': 'FIN002', 'employee_id': 'EMP002', 'record_type': 'bonus', 'amount': 10000, 
+                'currency': 'USD', 'description': 'Performance bonus', 'fiscal_year': 2023, 'quarter': 4},
+                {'record_id': 'FIN003', 'employee_id': 'EMP003', 'record_type': 'expense', 'amount': 2500, 
+                'currency': 'USD', 'description': 'Travel expenses', 'fiscal_year': 2023, 'quarter': 3}
             ]
             
             for fin in financial_data:
@@ -174,15 +186,19 @@ class DatabaseManager:
                     conn.execute(text("""
                         INSERT OR IGNORE INTO financial_records 
                         (record_id, employee_id, record_type, amount, currency, description, fiscal_year, quarter)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                        VALUES (:record_id, :employee_id, :record_type, :amount, :currency, :description, :fiscal_year, :quarter)
                     """), fin)
-                except:
-                    pass
+                except Exception as e:
+                    print(f"Error inserting financial record {fin['record_id']}: {e}")
             
-            # Sample public info with status
+            conn.commit()
+            
+            # Sample public info
             public_data = [
-                ('PUB001', 'Company Policies', 'Updated company policies for 2024', 'policies', '2024-01-01', 'published'),
-                ('PUB002', 'Holiday Schedule', '2024 company holiday schedule', 'announcements', '2023-12-15', 'published')
+                {'info_id': 'PUB001', 'title': 'Company Policies', 'content': 'Updated company policies for 2024', 
+                'category': 'policies', 'published_date': '2024-01-01', 'status': 'published'},
+                {'info_id': 'PUB002', 'title': 'Holiday Schedule', 'content': '2024 company holiday schedule', 
+                'category': 'announcements', 'published_date': '2023-12-15', 'status': 'published'}
             ]
             
             for pub in public_data:
@@ -190,10 +206,10 @@ class DatabaseManager:
                     conn.execute(text("""
                         INSERT OR IGNORE INTO public_info 
                         (info_id, title, content, category, published_date, status)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        VALUES (:info_id, :title, :content, :category, :published_date, :status)
                     """), pub)
-                except:
-                    pass
+                except Exception as e:
+                    logger.error(f"Error inserting public info {pub['info_id']}: {e}")
             
             conn.commit()
     
@@ -357,16 +373,15 @@ class DatabaseManager:
         else:
             query = "SELECT * FROM financial_records"
             params = {}
-        
+                
         return self.execute_query(query, params, user_context)
     
     def get_public_info(self, category: str = None, user_context: Dict[str, Any] = None) -> List[Dict[str, Any]]:
         """Get public information (minimal permissions required)."""
         user_scopes = user_context.get('scopes', []) if user_context else []
-        
         # Check basic read permission
         has_read_access = any(
-            scope in ['db:read:public', 'api:employee:read', '*']
+            scope in ['db:read:public', '*']
             for scope in user_scopes
         )
         

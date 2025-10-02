@@ -1,7 +1,7 @@
 [project]
-name = "internal-system-mcp"
+name = "third-party-integration-mcp"
 version = "1.0.0"
-description = "Internal System MCP with Enterprise Authentication"
+description = "Third Party Integration MCP to GitHub"
 authors = [
     {name = "MCP Team", email = "team@mcp.dev"}
 ]
@@ -32,10 +32,6 @@ dependencies = [
     "PyJWT>=2.8.0",
     "cryptography>=41.0.0",
     "requests>=2.31.0",
-    # Database support
-    "sqlalchemy>=2.0.0",
-    "psycopg2-binary>=2.9.0",
-    "pymongo>=4.5.0",
     # Configuration and utilities
     "python-dotenv>=1.0.0",
     "pyyaml>=6.0.1",
