@@ -69,7 +69,10 @@ def get_google_api_adapter(rbac_token: str) -> GoogleApiAdapter:
             rbac_proxy_url=config["rbac_proxy_url"],
             rbac_token=rbac_token,
         )
-    return gapi_cache[rbac_token]
+    gapi = gapi_cache[rbac_token]
+    gapi.refresh_token_if_needed()
+    
+    return gapi
 
 # Generic request processor
 async def process_request(

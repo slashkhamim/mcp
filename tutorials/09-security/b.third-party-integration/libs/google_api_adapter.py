@@ -19,6 +19,10 @@ class GoogleApiAdapter:
         self.access_token = r.json().get("access_token")
         self.token_expiration = r.json().get("expiration_time")
         self.headers = {"Authorization": f"Bearer {self.access_token}"}
+    
+    def refresh_token_if_needed(self):
+        if int(datetime.now(timezone.utc).timestamp()) > self.token_expiration:
+            self._init_authentication_context()
 
     def get_profile(self, user_context: Dict[str, Any] = None):
         user_scopes = user_context.get('scopes', []) if user_context else []
